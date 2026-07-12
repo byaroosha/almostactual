@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Almost Actual® — A gallery of images that nearly exist</title>
-<link rel="icon" href="data:,">
-<link rel="shortcut icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSIzMiIgeT0iMzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiNmZmYiPjE8L3RleHQ+PC9zdmc+">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500;700&family=Spline+Sans+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -101,8 +100,15 @@
 
   /* ================= floating UI ================= */
   .ui { position: fixed; z-index: 10; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
-  #sound { bottom: 39px; right: 118px; color: var(--bone); cursor: pointer; }
-  #sound span { color: var(--dim); }
+  #sound { bottom: 39px; right: 118px; color: var(--bone); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  #sound .state { color: var(--dim); }
+  #sound .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; }
+  #sound .eq i { width: 2px; height: 3px; background: var(--bone); border-radius: 1px; transition: height 0.3s ease; }
+  #sound.playing .eq i { animation: eq 1s ease-in-out infinite; }
+  #sound.playing .eq i:nth-child(2) { animation-duration: 1.3s; animation-delay: 0.2s; }
+  #sound.playing .eq i:nth-child(3) { animation-duration: 0.85s; animation-delay: 0.45s; }
+  @keyframes eq { 0%, 100% { height: 3px; } 50% { height: 11px; } }
+  @media (prefers-reduced-motion: reduce) { #sound.playing .eq i { animation: none; height: 7px; } }
 
   #blurb {
     bottom: 96px; left: 28px;
@@ -251,7 +257,7 @@
 <div id="viewport"><div id="wall"></div></div>
 <div id="vignette" aria-hidden="true"></div>
 
-<div class="ui" id="sound">Sound <span>[off]</span></div>
+<div class="ui" id="sound"><span class="eq"><i></i><i></i><i></i></span>Sound <span class="state">[off]</span></div>
 <div class="ui" id="blurb"><strong>Almost Actual</strong> is a collection of AI-made images: photos, paintings, and things that don't have a name yet. Every piece starts as noise and is shaped, step by step, into something that looks real, feels familiar, and never existed. The gap between actual and almost is where this work lives.</div>
 <div class="ui" id="clocks">
   <div class="row"><span class="place"><span class="ico" id="timeicon"></span>Local time</span><span class="time" id="localtime">--:--</span></div>
@@ -705,73 +711,246 @@ function tickClock() {
 }
 tickClock(); setInterval(tickClock, 30000);
 
-/* ---------------- generative sound: drone + drag wind + resolve chimes ---------------- */
+/* ---------------- generative ambient music: evolving theme + drag wind + resolve chimes ----------------
+   A slow-floating ambient-electronic piece, synthesized live (no audio files, no
+   copyright). The arrangement drifts through sections and loops: intro opens on
+   soft synth swells + a distant hum; the main theme is a glassy arpeggio over warm
+   rising pads; the swell adds sub bass and wider textures; the breakdown strips
+   back to sparse drifting tones; the outro fades into airy pad trails. */
 const sound = document.getElementById('sound');
 let on = false, actx = null, master = null, windGain = null, lastBlip = 0;
+let padBus, arpBus, subBus, humBus, revSend;
+let schedTimer = null, stepIndex = 0, nextStepTime = 0;
+
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+
+/* chords (MIDI): Dm(add9) · B♭maj7 · Fmaj9 · C(add9) — warm and floating */
+const CHORDS = [
+  [50, 53, 57, 64],
+  [46, 50, 53, 57],
+  [53, 57, 60, 64, 67],
+  [48, 52, 55, 62],
+];
+const CHIME_NOTES = [74, 77, 79, 81, 84];   /* resolve chimes, in key */
+/* arrangement: one entry per ~4s measure. c = chord index (-1 = rest). */
+const ARRANGEMENT = [
+  { c: 0, s: 'intro' }, { c: 1, s: 'intro' },
+  { c: 2, s: 'main' }, { c: 3, s: 'main' }, { c: 0, s: 'main' }, { c: 1, s: 'main' },
+  { c: 2, s: 'swell' }, { c: 3, s: 'swell' }, { c: 0, s: 'swell' }, { c: 1, s: 'swell' },
+  { c: 0, s: 'break' }, { c: -1, s: 'break' }, { c: 1, s: 'break' }, { c: -1, s: 'break' },
+  { c: 2, s: 'outro' }, { c: 0, s: 'outro' },
+];
+const LOOP_START = 2;      /* after the first pass, loop back to the main theme */
+const STEPS = 16;          /* steps per measure */
+const STEP = 0.30;         /* seconds per step — the slow-floating pulse */
+const SECTION = {
+  intro: { pad: 0.50, arp: 0.00, sub: 0.00, hum: 0.50, rev: 0.78 },
+  main:  { pad: 0.60, arp: 0.42, sub: 0.00, hum: 0.34, rev: 0.62 },
+  swell: { pad: 0.68, arp: 0.42, sub: 0.55, hum: 0.30, rev: 0.68 },
+  break: { pad: 0.34, arp: 0.16, sub: 0.00, hum: 0.40, rev: 0.84 },
+  outro: { pad: 0.44, arp: 0.13, sub: 0.10, hum: 0.40, rev: 0.90 },
+};
+const PAD_OPTS = {
+  intro: { atk: 3.4, rel: 4.0, peak: 0.10, width: 1.0, detune: 5 },
+  main:  { atk: 2.4, rel: 3.4, peak: 0.11, width: 1.0, detune: 6 },
+  swell: { atk: 2.6, rel: 3.8, peak: 0.12, width: 1.4, detune: 9 },
+  break: { atk: 3.6, rel: 4.4, peak: 0.09, width: 1.1, detune: 5 },
+  outro: { atk: 3.6, rel: 4.8, peak: 0.10, width: 1.2, detune: 7 },
+};
+const ARP_DENSITY = { intro: 0, main: 3, swell: 3, break: 6, outro: 4 };
+const ARP_VEL = { intro: 0, main: 0.085, swell: 0.085, break: 0.05, outro: 0.05 };
+
+function makeImpulse(dur, decay) {
+  const rate = actx.sampleRate, len = Math.floor(rate * dur);
+  const buf = actx.createBuffer(2, len, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return buf;
+}
 
 function initAudio() {
   actx = new (window.AudioContext || window.webkitAudioContext)();
-  master = actx.createGain();
-  master.gain.value = 0;
-  master.connect(actx.destination);
+  master = actx.createGain(); master.gain.value = 0;
+  const comp = actx.createDynamicsCompressor();        /* glue the mix, keep it rounded */
+  comp.threshold.value = -18; comp.ratio.value = 3; comp.attack.value = 0.02; comp.release.value = 0.3;
+  const air = actx.createBiquadFilter();               /* silky highs */
+  air.type = 'highshelf'; air.frequency.value = 6000; air.gain.value = 2;
+  master.connect(comp); comp.connect(air); air.connect(actx.destination);
 
-  /* low drone — the room tone of latent space */
-  const droneFilter = actx.createBiquadFilter();
-  droneFilter.type = 'lowpass'; droneFilter.frequency.value = 160;
-  const droneGain = actx.createGain(); droneGain.gain.value = 0.16;
-  [55, 55 * 1.498, 110.7].forEach(f => {
-    const o = actx.createOscillator();
-    o.type = 'triangle'; o.frequency.value = f;
-    o.connect(droneFilter); o.start();
+  /* spacious reverb from a synthesized impulse */
+  const reverb = actx.createConvolver(); reverb.buffer = makeImpulse(3.8, 2.6);
+  const revReturn = actx.createGain(); revReturn.gain.value = 0.9;
+  reverb.connect(revReturn); revReturn.connect(master);
+  revSend = actx.createGain(); revSend.gain.value = 0.6; revSend.connect(reverb);
+
+  /* voice buses — dry to the master plus a reverb send */
+  padBus = actx.createGain(); padBus.gain.value = 0;
+  arpBus = actx.createGain(); arpBus.gain.value = 0;
+  subBus = actx.createGain(); subBus.gain.value = 0;
+  humBus = actx.createGain(); humBus.gain.value = 0;
+  padBus.connect(master); padBus.connect(revSend);
+  arpBus.connect(master); arpBus.connect(revSend);
+  subBus.connect(master);
+  humBus.connect(master); humBus.connect(revSend);
+
+  /* distant hum — the room tone drifting underneath */
+  [38, 45].forEach(n => {
+    const o = actx.createOscillator(); o.type = 'sine'; o.frequency.value = midi(n);
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 220;
+    const g = actx.createGain(); g.gain.value = 0.5;
+    o.connect(lp); lp.connect(g); g.connect(humBus); o.start();
   });
-  droneFilter.connect(droneGain); droneGain.connect(master);
-  const lfo = actx.createOscillator(); lfo.frequency.value = 0.06;
-  const lfoAmt = actx.createGain(); lfoAmt.gain.value = 60;
-  lfo.connect(lfoAmt); lfoAmt.connect(droneFilter.frequency); lfo.start();
+  const hlfo = actx.createOscillator(); hlfo.frequency.value = 0.05;
+  const hlfoAmt = actx.createGain(); hlfoAmt.gain.value = 0.12;
+  hlfo.connect(hlfoAmt); hlfoAmt.connect(humBus.gain); hlfo.start();
 
   /* wind — swells with drag speed */
   const len = actx.sampleRate * 2;
   const buf = actx.createBuffer(1, len, actx.sampleRate);
   const ch = buf.getChannelData(0);
   for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
-  const noise = actx.createBufferSource();
-  noise.buffer = buf; noise.loop = true;
-  const bp = actx.createBiquadFilter();
-  bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.8;
+  const noise = actx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+  const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 480; bp.Q.value = 0.7;
   windGain = actx.createGain(); windGain.gain.value = 0;
-  noise.connect(bp); bp.connect(windGain); windGain.connect(master);
+  noise.connect(bp); bp.connect(windGain); windGain.connect(master); windGain.connect(revSend);
   noise.start();
 }
 
+/* warm rising pad chord */
+function pad(notes, t, dur, o) {
+  notes.forEach((n, i) => {
+    const g = actx.createGain(); g.gain.value = 0;
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1500; lp.Q.value = 0.4;
+    const pan = actx.createStereoPanner(); pan.pan.value = (i % 2 ? 0.3 : -0.3) * o.width;
+    [-o.detune, o.detune].forEach((det, k) => {
+      const osc = actx.createOscillator();
+      osc.type = k ? 'triangle' : 'sawtooth';
+      osc.frequency.value = midi(n); osc.detune.value = det;
+      osc.connect(g); osc.start(t); osc.stop(t + dur + o.rel + 0.2);
+    });
+    g.connect(lp); lp.connect(pan); pan.connect(padBus);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(o.peak, t + o.atk);
+    g.gain.setValueAtTime(o.peak, t + dur);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + o.rel);
+  });
+}
+
+/* glassy bell note for the arpeggio */
+function arpHit(n, t, peak) {
+  const g = actx.createGain(); g.gain.value = 0;
+  const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 300;
+  const o1 = actx.createOscillator(); o1.type = 'triangle'; o1.frequency.value = midi(n);
+  const o2 = actx.createOscillator(); o2.type = 'sine'; o2.frequency.value = midi(n) * 2;
+  const g2 = actx.createGain(); g2.gain.value = 0.22; o2.connect(g2); g2.connect(g);
+  o1.connect(g); g.connect(hp); hp.connect(arpBus);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+  o1.start(t); o2.start(t); o1.stop(t + 1.8); o2.stop(t + 1.8);
+}
+
+/* rounded sub bass */
+function subHit(n, t, dur) {
+  const o = actx.createOscillator(); o.type = 'sine'; o.frequency.value = midi(n);
+  const g = actx.createGain(); g.gain.value = 0;
+  o.connect(g); g.connect(subBus);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.42, t + 1.8);
+  g.gain.setValueAtTime(0.42, t + Math.max(1.9, dur - 1.0));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.4);
+  o.start(t); o.stop(t + dur + 0.5);
+}
+
+const rampTo = (param, v, t) => param.setTargetAtTime(v, t, 1.8);
+function applySection(s, t) {
+  const M = SECTION[s];
+  rampTo(padBus.gain, M.pad, t); rampTo(arpBus.gain, M.arp, t);
+  rampTo(subBus.gain, M.sub, t); rampTo(humBus.gain, M.hum, t);
+  rampTo(revSend.gain, M.rev, t);
+}
+const arpSequence = chord => [...chord.map(n => n + 12), chord[0] + 24].sort((a, b) => a - b);
+const padVoicing = (chord, s) => s === 'break' ? [chord[0], chord[chord.length - 1]] : chord;
+
+function scheduleStep(idx, t) {
+  const m = ARRANGEMENT[Math.floor(idx / STEPS) % ARRANGEMENT.length];
+  const sm = idx % STEPS;
+  if (sm === 0) {
+    applySection(m.s, t);
+    if (m.c >= 0) {
+      const chord = CHORDS[m.c];
+      pad(padVoicing(chord, m.s), t, STEPS * STEP, PAD_OPTS[m.s]);
+      if (m.s === 'swell') subHit(chord[0] - 12, t, STEPS * STEP);
+      if (m.s === 'outro') subHit(chord[0] - 12, t, STEPS * STEP * 0.7);
+    }
+  }
+  if (m.c >= 0) {
+    const dens = ARP_DENSITY[m.s];
+    if (dens > 0 && sm % dens === 0) {
+      const seq = arpSequence(CHORDS[m.c]);
+      arpHit(seq[idx % seq.length], t, ARP_VEL[m.s]);
+    }
+  }
+}
+
+function scheduler() {
+  while (nextStepTime < actx.currentTime + 0.12) {
+    scheduleStep(stepIndex, nextStepTime);
+    nextStepTime += STEP;
+    stepIndex++;
+    if (stepIndex >= ARRANGEMENT.length * STEPS) stepIndex = LOOP_START * STEPS;
+  }
+}
+
+/* resolve chime — a glassy in-key note when a work snaps to "actual" */
 function blip() {
   if (!actx || !on) return;
   const t = actx.currentTime;
-  if (t - lastBlip < 0.09) return;
+  if (t - lastBlip < 0.12) return;
   lastBlip = t;
-  const o = actx.createOscillator();
-  o.type = 'sine';
-  o.frequency.value = 520 + Math.random() * 700;
-  const g = actx.createGain();
+  const n = CHIME_NOTES[(Math.random() * CHIME_NOTES.length) | 0];
+  const g = actx.createGain(); g.gain.value = 0;
+  const o1 = actx.createOscillator(); o1.type = 'triangle'; o1.frequency.value = midi(n);
+  const o2 = actx.createOscillator(); o2.type = 'sine'; o2.frequency.value = midi(n) * 2;
+  const g2 = actx.createGain(); g2.gain.value = 0.3; o2.connect(g2); g2.connect(g);
+  o1.connect(g); g.connect(master); g.connect(revSend);
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.05, t + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-  o.connect(g); g.connect(master);
-  o.start(t); o.stop(t + 0.4);
+  g.gain.linearRampToValueAtTime(0.035, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
+  o1.start(t); o2.start(t); o1.stop(t + 2.0); o2.stop(t + 2.0);
 }
 
 sound.addEventListener('click', () => {
   on = !on;
-  sound.innerHTML = 'Sound <span>[' + (on ? 'on' : 'off') + ']</span>';
+  sound.classList.toggle('playing', on);
+  sound.querySelector('.state').textContent = '[' + (on ? 'on' : 'off') + ']';
   if (on) {
     if (!actx) initAudio();
     actx.resume();
+    nextStepTime = actx.currentTime + 0.15;
+    if (!schedTimer) schedTimer = setInterval(scheduler, 25);
     master.gain.cancelScheduledValues(actx.currentTime);
-    master.gain.linearRampToValueAtTime(0.5, actx.currentTime + 1.2);
+    master.gain.setValueAtTime(master.gain.value, actx.currentTime);
+    master.gain.linearRampToValueAtTime(0.4, actx.currentTime + 4.0);
   } else if (actx) {
     master.gain.cancelScheduledValues(actx.currentTime);
-    master.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6);
+    master.gain.setValueAtTime(master.gain.value, actx.currentTime);
+    master.gain.linearRampToValueAtTime(0, actx.currentTime + 1.5);
+    if (schedTimer) { clearInterval(schedTimer); schedTimer = null; }
   }
 });
+
+/* Autoplay is blocked until a gesture, so start the music on the first
+   interaction (drag / tap / scroll / key) — i.e. the moment they start
+   browsing — then it plays continuously. The Sound toggle still mutes it. */
+function autoStartAudio() {
+  ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(ev => removeEventListener(ev, autoStartAudio));
+  if (!on) sound.click();          // reuse the toggle's on-path within the gesture
+}
+['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(ev =>
+  addEventListener(ev, autoStartAudio, { passive: true }));
 </script>
 
 </body>
