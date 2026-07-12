@@ -240,7 +240,7 @@
 <div class="ui" id="sound">Sound <span>[off]</span></div>
 <div class="ui" id="blurb"><strong>Almost Actual</strong> is a collection of AI-made images: photos, paintings, and things that don't have a name yet. Every piece starts as noise and is shaped, step by step, into something that looks real, feels familiar, and never existed. The gap between actual and almost is where this work lives.</div>
 <div class="ui" id="clocks">
-  <div class="row"><span class="place">● Works</span><span class="time" id="artcount">--</span></div>
+  <div class="row"><span class="place">● Local time</span><span class="time" id="localtime">--:--</span></div>
   <div class="row"><span class="place">◉ Updated</span><span class="time" id="lastupdate">--</span></div>
 </div>
 <nav class="ui" id="nav">
@@ -670,8 +670,14 @@ requestAnimationFrame(frame);
 /* ---------------- clock + sound toggle ---------------- */
 /* ---------------- ledger: number of works + last update ---------------- */
 const LAST_UPDATE = '12 JUL 2026';   /* edit this whenever you add or change work */
-document.getElementById('artcount').textContent = String(ALL_IMAGES.length).padStart(2, '0');
 document.getElementById('lastupdate').textContent = LAST_UPDATE;
+
+function tickClock() {
+  const d = new Date();
+  document.getElementById('localtime').textContent =
+    String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+tickClock(); setInterval(tickClock, 30000);
 
 /* ---------------- generative sound: drone + drag wind + resolve chimes ---------------- */
 const sound = document.getElementById('sound');
