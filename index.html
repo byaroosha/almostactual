@@ -145,63 +145,45 @@
   #nav a.active { background: var(--bone); color: var(--void); }
   #nav a:not(.active):hover { background: rgba(255,255,255,0.35); }
 
-  /* full-screen room filter overlay */
-  #roomoverlay {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    padding: 52px 56px 120px;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    color: #fff;
-    font-family: "Spline Sans Mono", monospace;
-    background:
-      radial-gradient(90% 60% at 50% 118%, rgba(74,48,32,0.55), transparent 60%),
-      radial-gradient(130% 100% at 50% -12%, #24262b, #0a0b0d 66%);
-    animation: roFade 0.32s ease;
-  }
+  /* filter by type — white bottom-sheet tray */
+  #roomoverlay { position: fixed; inset: 0; z-index: 20; }
   #roomoverlay[hidden] { display: none; }
+  .ro-scrim {
+    position: absolute; inset: 0;
+    background: rgba(30,36,46,0.26);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    animation: roFade 0.3s ease;
+  }
+  .ro-tray {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    border-radius: 28px 28px 0 0;
+    padding: 18px 52px 56px;
+    box-shadow: 0 -20px 60px rgba(30,40,60,0.22);
+    animation: roSlide 0.36s cubic-bezier(0.16,0.84,0.36,1);
+  }
   @keyframes roFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes roSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .ro-handle {
+    width: 42px; height: 4px; border-radius: 4px;
+    background: var(--line); margin: 0 auto 26px;
+  }
   .ro-eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: #8a8f98;
-    margin-bottom: 44px;
+    font-family: "Spline Sans Mono", monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 18px;
   }
   .ro-headline {
-    font-family: "Roboto", sans-serif;
-    font-weight: 700;
-    font-size: clamp(38px, 7.6vw, 96px);
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-    max-width: 15ch;
+    font-family: "Roboto", sans-serif; font-weight: 700;
+    font-size: clamp(34px, 6vw, 72px); line-height: 1.05;
+    letter-spacing: -0.02em; color: var(--bone); max-width: 16ch;
   }
   .ro-headline a {
-    color: #4a4d54;
-    text-decoration: none;
-    cursor: pointer;
+    color: #C2C7D0; text-decoration: none; cursor: pointer;
     transition: color 0.2s ease;
   }
-  .ro-headline a:hover { color: #b8bcc4; }
-  .ro-headline a.active { color: #fff; }
-  .ro-close {
-    position: fixed;
-    bottom: 36px; right: 44px;
-    background: #fff;
-    color: #111;
-    border: none;
-    cursor: pointer;
-    font-family: "Roboto", sans-serif;
-    font-weight: 500;
-    font-size: 22px;
-    letter-spacing: 0.01em;
-    padding: 26px 46px;
-    border-radius: 60px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  }
-  .ro-close:hover { background: #ececec; }
+  .ro-headline a:hover { color: #8A91A0; }
+  .ro-headline a.active { color: var(--bone); }
 
   #intro {
     position: fixed;
@@ -245,9 +227,7 @@
     #blurb, #hint, #clocks { display: none; }
     #nav { top: auto; bottom: 24px; right: 50%; transform: translateX(50%); }
     #nav a { padding: 10px 20px; font-size: 14px; }
-    #roomoverlay { padding: 32px 24px 130px; }
-    .ro-eyebrow { margin-bottom: 32px; }
-    .ro-close { bottom: 24px; right: 24px; padding: 18px 34px; font-size: 18px; }
+    .ro-tray { padding: 16px 26px 46px; }
   }
 </style>
 </head>
@@ -268,9 +248,12 @@
   <a href="#" id="navAbout">About</a>
 </nav>
 <div id="roomoverlay" hidden>
-  <div class="ro-eyebrow">Filter by room</div>
-  <h2 class="ro-headline" id="roHeadline"></h2>
-  <button class="ro-close" id="roClose">Close</button>
+  <div class="ro-scrim" id="roScrim"></div>
+  <div class="ro-tray">
+    <div class="ro-handle"></div>
+    <div class="ro-eyebrow">Filter by type</div>
+    <h2 class="ro-headline" id="roHeadline"></h2>
+  </div>
 </div>
 <canvas id="intro" aria-hidden="true"></canvas>
 <div class="ui" id="zoom">
@@ -394,57 +377,62 @@ function buildWall(room) {
   }
 }
 
-/* ---------------- room navigation (full-screen filter overlay) ---------------- */
+/* ---------------- filter by type (white tray) ---------------- */
 const navHome  = document.getElementById('navHome');
 const navRooms = document.getElementById('navRooms');
 const navAbout = document.getElementById('navAbout');
 const overlay  = document.getElementById('roomoverlay');
 const headline = document.getElementById('roHeadline');
 
+/* every image, and the distinct mediums to filter by. TYPES auto-grows as
+   you add images with a new `medium` above — no other change needed. */
+const ALL_IMAGES = ROOMS.flatMap(r => r.images);
+const TYPES = [...new Set(ALL_IMAGES.map(im => im.medium))];
+
 function setActiveNav(which) {
   navHome.classList.toggle('active', which === 'home');
   navRooms.classList.toggle('active', which === 'rooms');
 }
 
-/* big selectable headline: "All" + every room name, reference-style */
+/* big selectable headline: "All" + every medium */
 (function buildHeadline() {
-  const mk = (id, label) => {
+  const mk = (type, label) => {
     const a = document.createElement('a');
-    a.dataset.room = id;
+    a.dataset.type = type;
     a.textContent = label;
-    a.addEventListener('click', () => selectRoom(id));
+    a.addEventListener('click', () => selectType(type));
     return a;
   };
   headline.appendChild(mk('all', 'All'));
   headline.appendChild(document.createTextNode(' '));
-  ROOMS.forEach((r, i) => {
-    headline.appendChild(mk(r.id, r.name + (i < ROOMS.length - 1 ? ',' : '')));
+  TYPES.forEach((t, i) => {
+    headline.appendChild(mk(t, t + (i < TYPES.length - 1 ? ',' : '')));
     headline.appendChild(document.createTextNode(' '));
   });
 })();
 
-function highlightHeadline(id) {
-  headline.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.room === id));
+function highlightHeadline(type) {
+  headline.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.type === type));
 }
 
-const openOverlay  = () => { overlay.hidden = false; };
-const closeOverlay = () => { overlay.hidden = true; };
+const openTray  = () => { overlay.hidden = false; };
+const closeTray = () => { overlay.hidden = true; };
 
-function selectRoom(id) {
-  const room = id === 'all' ? allRoom() : ROOMS.find(r => r.id === id);
-  buildWall(room);
-  setActiveNav(id === 'all' ? 'home' : 'rooms');
-  highlightHeadline(id);
-  closeOverlay();
+function selectType(type) {
+  const images = type === 'all' ? ALL_IMAGES : ALL_IMAGES.filter(im => im.medium === type);
+  buildWall({ images, off: 0 });
+  setActiveNav(type === 'all' ? 'home' : 'rooms');
+  highlightHeadline(type);
+  closeTray();
 }
 
-navHome.addEventListener('click',  e => { e.preventDefault(); selectRoom('all'); });
-navRooms.addEventListener('click', e => { e.preventDefault(); overlay.hidden ? openOverlay() : closeOverlay(); });
-navAbout.addEventListener('click', e => { e.preventDefault(); closeOverlay(); });
-document.getElementById('roClose').addEventListener('click', closeOverlay);
-addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+navHome.addEventListener('click',  e => { e.preventDefault(); selectType('all'); });
+navRooms.addEventListener('click', e => { e.preventDefault(); overlay.hidden ? openTray() : closeTray(); });
+navAbout.addEventListener('click', e => { e.preventDefault(); closeTray(); });
+document.getElementById('roScrim').addEventListener('click', closeTray);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeTray(); });
 
-selectRoom('all');  /* start on the combined wall */
+selectType('all');  /* start showing everything */
 
 /* ---------------- intro text: dots that demolish on first move ---------------- */
 const intro = document.getElementById('intro');
