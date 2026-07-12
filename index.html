@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Almost Actual® — A gallery of images that nearly exist</title>
+<link rel="icon" href="data:,">
+<link rel="shortcut icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -143,41 +145,63 @@
   #nav a.active { background: var(--bone); color: var(--void); }
   #nav a:not(.active):hover { background: rgba(255,255,255,0.35); }
 
-  /* rooms dropdown, shares the nav's glass look */
-  #roommenu {
-    top: 62px; right: 28px;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 190px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.02) 70%, rgba(255,255,255,0.18));
-    backdrop-filter: blur(3px) saturate(165%);
-    -webkit-backdrop-filter: blur(3px) saturate(165%);
-    border: 1px solid rgba(255,255,255,0.45);
-    box-shadow:
-      inset 1.5px 2.5px 4px -2px rgba(255,255,255,0.95),
-      inset -1.5px -2.5px 4px -2px rgba(255,255,255,0.8),
-      inset 0 0 0 0.5px rgba(255,255,255,0.35),
-      0 10px 26px rgba(40,52,72,0.16),
-      0 2px 6px rgba(40,52,72,0.08);
-    border-radius: 22px;
-    padding: 6px;
+  /* full-screen room filter overlay */
+  #roomoverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    padding: 52px 56px 120px;
     display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    color: #fff;
+    font-family: "Spline Sans Mono", monospace;
+    background:
+      radial-gradient(90% 60% at 50% 118%, rgba(74,48,32,0.55), transparent 60%),
+      radial-gradient(130% 100% at 50% -12%, #24262b, #0a0b0d 66%);
+    animation: roFade 0.32s ease;
   }
-  #roommenu[hidden] { display: none; }
-  #roommenu a {
-    color: var(--bone);
-    text-decoration: none;
+  #roomoverlay[hidden] { display: none; }
+  @keyframes roFade { from { opacity: 0; } to { opacity: 1; } }
+  .ro-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #8a8f98;
+    margin-bottom: 44px;
+  }
+  .ro-headline {
     font-family: "Roboto", sans-serif;
-    font-weight: 600;
-    font-size: 13px;
-    text-transform: none;
-    letter-spacing: 0.01em;
-    padding: 9px 16px;
-    border-radius: 16px;
-    white-space: nowrap;
+    font-weight: 700;
+    font-size: clamp(38px, 7.6vw, 96px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    max-width: 15ch;
   }
-  #roommenu a.active { background: var(--bone); color: var(--void); }
-  #roommenu a:not(.active):hover { background: rgba(255,255,255,0.35); }
+  .ro-headline a {
+    color: #4a4d54;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .ro-headline a:hover { color: #b8bcc4; }
+  .ro-headline a.active { color: #fff; }
+  .ro-close {
+    position: fixed;
+    bottom: 36px; right: 44px;
+    background: #fff;
+    color: #111;
+    border: none;
+    cursor: pointer;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    padding: 26px 46px;
+    border-radius: 60px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  .ro-close:hover { background: #ececec; }
 
   #intro {
     position: fixed;
@@ -221,8 +245,9 @@
     #blurb, #hint, #clocks { display: none; }
     #nav { top: auto; bottom: 24px; right: 50%; transform: translateX(50%); }
     #nav a { padding: 10px 20px; font-size: 14px; }
-    /* menu sits above the bottom nav, centered, instead of top-right */
-    #roommenu { top: auto; bottom: 84px; right: 50%; transform: translateX(50%); }
+    #roomoverlay { padding: 32px 24px 130px; }
+    .ro-eyebrow { margin-bottom: 32px; }
+    .ro-close { bottom: 24px; right: 24px; padding: 18px 34px; font-size: 18px; }
   }
 </style>
 </head>
@@ -242,7 +267,11 @@
   <a href="#" id="navRooms">Rooms</a>
   <a href="#" id="navAbout">About</a>
 </nav>
-<div class="ui" id="roommenu" hidden></div>
+<div id="roomoverlay" hidden>
+  <div class="ro-eyebrow">Filter by room</div>
+  <h2 class="ro-headline" id="roHeadline"></h2>
+  <button class="ro-close" id="roClose">Close</button>
+</div>
 <canvas id="intro" aria-hidden="true"></canvas>
 <div class="ui" id="zoom">
   <button id="zoomout" aria-label="Zoom out">−</button>
@@ -293,25 +322,29 @@ const TILES = [
    Drop pictures into images/<folder>/ and list them in `images`.
    While `images` is empty a room falls back to tinted gradient placeholders
    (its `off` shifts the palette so every room looks distinct). */
+/* Per-image info shows on the frame: room (auto), medium, year.
+   Edit `medium` / `year` per picture. `medium` is a starter guess. */
 const ROOMS = [
   { id: 'flat', name: 'Flat Illustration', off: 0, images: [
-    'images/Flat_illustration/a_woman.png',
-    'images/Flat_illustration/toucan_perched.png',
-    'images/Flat_illustration/woman_in_a_swim.png',
-    'images/Flat_illustration/womans_face_behind_tropical.png',
-    'images/Flat_illustration/womans_face_behind_tropical02.png',
+    { src: 'images/Flat_illustration/a_woman.png',                       medium: 'Illustration', year: 2024 },
+    { src: 'images/Flat_illustration/toucan_perched.png',                medium: 'Illustration', year: 2024 },
+    { src: 'images/Flat_illustration/woman_in_a_swim.png',               medium: 'Illustration', year: 2024 },
+    { src: 'images/Flat_illustration/womans_face_behind_tropical.png',   medium: 'Illustration', year: 2024 },
+    { src: 'images/Flat_illustration/womans_face_behind_tropical02.png', medium: 'Illustration', year: 2024 },
   ] },
   { id: 'mix', name: 'Mix Media', off: 2, images: [
-    'images/Mix_media/mix01.png',
-    'images/Mix_media/mix02.png',
-    'images/Mix_media/mix03.png',
+    { src: 'images/Mix_media/mix01.png', medium: 'Mixed Media', year: 2024 },
+    { src: 'images/Mix_media/mix02.png', medium: 'Mixed Media', year: 2024 },
+    { src: 'images/Mix_media/mix03.png', medium: 'Mixed Media', year: 2024 },
   ] },
   { id: 'rebels', name: 'Rebels', off: 4, images: [
-    'images/Rebels/youth01.png',
-    'images/Rebels/youth02.png',
-    'images/Rebels/youth03.png',
+    { src: 'images/Rebels/youth01.png', medium: 'Photography', year: 2024 },
+    { src: 'images/Rebels/youth02.png', medium: 'Photography', year: 2024 },
+    { src: 'images/Rebels/youth03.png', medium: 'Photography', year: 2024 },
   ] },
 ];
+/* stamp each image with its room name so it reads correctly in the combined "All" view */
+ROOMS.forEach(r => r.images.forEach(im => { im.room = r.name; }));
 /* Home shows every work from every room, combined. */
 function allRoom() { return { id: 'all', name: 'All Works', off: 0, images: ROOMS.flatMap(r => r.images) }; }
 
@@ -336,24 +369,24 @@ function buildWall(room) {
         el.href = '#';
         el.style.width = w + 'px';
         el.style.height = h + 'px';
-        const tag = TAGS[i % TAGS.length];
-        const pills = w >= 340
-          ? `<span class="meta bl"><span class="pill">${tag[0]}</span><span class="pill">${tag[1]}</span></span>`
-          : '';
-        const art = imgs.length
-          ? `background-image:url('${imgs[i % imgs.length]}');background-size:cover;background-position:center`
+        const im = imgs.length ? imgs[i % imgs.length] : null;
+        const art = im
+          ? `background-image:url('${im.src}');background-size:cover;background-position:center`
           : `background:${PALETTES[(i + room.off) % PALETTES.length].join(',')}`;
+        /* real per-image info when we have it, fake placeholders otherwise */
+        const roomLbl = im ? (im.room   || '') : MODELS[i % MODELS.length];
+        const medium  = im ? (im.medium || '') : TITLES[i % TITLES.length];
+        const year    = im ? (im.year   || '') : 2023 + (i % 4);
         el.innerHTML =
-          `<span class="meta tl">${MODELS[i % MODELS.length]}</span>` +
-          `<span class="meta tr">${TITLES[i % TITLES.length]}</span>` +
-          pills +
-          `<span class="meta br">${2023 + (i % 4)}</span>` +
+          `<span class="meta tl">${roomLbl}</span>` +
+          `<span class="meta tr">${medium}</span>` +
+          `<span class="meta br">${year}</span>` +
           `<div class="frame"><div class="art" style="${art}"></div><div class="dots"></div></div>`;
         el.addEventListener('click', e => e.preventDefault());
         wall.appendChild(el);
         cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h,
           delay: base + 150 + Math.random() * 1100,
-          title: TITLES[i % TITLES.length].toUpperCase(),
+          title: String(medium).toUpperCase(),
           titleEl: el.querySelector('.tr'),
           wasActual: false, lastText: '' });
       });
@@ -361,42 +394,57 @@ function buildWall(room) {
   }
 }
 
-/* ---------------- room navigation ---------------- */
+/* ---------------- room navigation (full-screen filter overlay) ---------------- */
 const navHome  = document.getElementById('navHome');
 const navRooms = document.getElementById('navRooms');
 const navAbout = document.getElementById('navAbout');
-const roommenu = document.getElementById('roommenu');
-
-ROOMS.forEach(r => {
-  const a = document.createElement('a');
-  a.href = '#';
-  a.textContent = r.name;
-  a.dataset.room = r.id;
-  a.addEventListener('click', e => { e.preventDefault(); enterRoom(r); });
-  roommenu.appendChild(a);
-});
+const overlay  = document.getElementById('roomoverlay');
+const headline = document.getElementById('roHeadline');
 
 function setActiveNav(which) {
   navHome.classList.toggle('active', which === 'home');
   navRooms.classList.toggle('active', which === 'rooms');
 }
-function highlightMenu(id) {
-  roommenu.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.room === id));
+
+/* big selectable headline: "All" + every room name, reference-style */
+(function buildHeadline() {
+  const mk = (id, label) => {
+    const a = document.createElement('a');
+    a.dataset.room = id;
+    a.textContent = label;
+    a.addEventListener('click', () => selectRoom(id));
+    return a;
+  };
+  headline.appendChild(mk('all', 'All'));
+  headline.appendChild(document.createTextNode(' '));
+  ROOMS.forEach((r, i) => {
+    headline.appendChild(mk(r.id, r.name + (i < ROOMS.length - 1 ? ',' : '')));
+    headline.appendChild(document.createTextNode(' '));
+  });
+})();
+
+function highlightHeadline(id) {
+  headline.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.room === id));
 }
-const closeMenu = () => { roommenu.hidden = true; };
 
-function enterRoom(room) { buildWall(room); highlightMenu(room.id); setActiveNav('rooms'); closeMenu(); }
-function enterHome()     { buildWall(allRoom()); highlightMenu(null); setActiveNav('home'); closeMenu(); }
+const openOverlay  = () => { overlay.hidden = false; };
+const closeOverlay = () => { overlay.hidden = true; };
 
-navHome.addEventListener('click',  e => { e.preventDefault(); enterHome(); });
-navRooms.addEventListener('click', e => { e.preventDefault(); roommenu.hidden = !roommenu.hidden; });
-navAbout.addEventListener('click', e => { e.preventDefault(); closeMenu(); });
-/* click anywhere outside the menu (and off the Rooms toggle) dismisses it */
-addEventListener('pointerdown', e => {
-  if (!roommenu.hidden && !roommenu.contains(e.target) && e.target !== navRooms) closeMenu();
-}, true);
+function selectRoom(id) {
+  const room = id === 'all' ? allRoom() : ROOMS.find(r => r.id === id);
+  buildWall(room);
+  setActiveNav(id === 'all' ? 'home' : 'rooms');
+  highlightHeadline(id);
+  closeOverlay();
+}
 
-enterHome();  /* start on the combined wall */
+navHome.addEventListener('click',  e => { e.preventDefault(); selectRoom('all'); });
+navRooms.addEventListener('click', e => { e.preventDefault(); overlay.hidden ? openOverlay() : closeOverlay(); });
+navAbout.addEventListener('click', e => { e.preventDefault(); closeOverlay(); });
+document.getElementById('roClose').addEventListener('click', closeOverlay);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+
+selectRoom('all');  /* start on the combined wall */
 
 /* ---------------- intro text: dots that demolish on first move ---------------- */
 const intro = document.getElementById('intro');
