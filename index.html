@@ -113,7 +113,9 @@
   }
   #clocks { bottom: 34px; left: 28px; line-height: 1.9; }
   #clocks .row { display: flex; gap: 18px; justify-content: space-between; }
-  #clocks .place { color: var(--bone); }
+  #clocks .place { color: var(--bone); display: inline-flex; align-items: center; gap: 8px; }
+  #clocks .ico { display: inline-flex; color: #000; }
+  #clocks .ico svg { width: 13px; height: 13px; display: block; }
   #clocks .time { color: var(--dim); }
 
   #nav {
@@ -240,8 +242,8 @@
 <div class="ui" id="sound">Sound <span>[off]</span></div>
 <div class="ui" id="blurb"><strong>Almost Actual</strong> is a collection of AI-made images: photos, paintings, and things that don't have a name yet. Every piece starts as noise and is shaped, step by step, into something that looks real, feels familiar, and never existed. The gap between actual and almost is where this work lives.</div>
 <div class="ui" id="clocks">
-  <div class="row"><span class="place">● Local time</span><span class="time" id="localtime">--:--</span></div>
-  <div class="row"><span class="place">◉ Updated</span><span class="time" id="lastupdate">--</span></div>
+  <div class="row"><span class="place"><span class="ico" id="timeicon"></span>Local time</span><span class="time" id="localtime">--:--</span></div>
+  <div class="row"><span class="place"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>Updated :</span><span class="time" id="lastupdate">--</span></div>
 </div>
 <nav class="ui" id="nav">
   <a href="#" id="navHome" class="active">Home</a>
@@ -672,10 +674,26 @@ requestAnimationFrame(frame);
 const LAST_UPDATE = '12 JUL 2026';   /* edit this whenever you add or change work */
 document.getElementById('lastupdate').textContent = LAST_UPDATE;
 
+/* time-of-day icon: sunrise / sun / sunset / moon by the hour */
+const SVG = inner => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const TIME_ICONS = {
+  sunrise: SVG('<path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/>'),
+  sun:     SVG('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>'),
+  sunset:  SVG('<path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="16 5 12 9 8 5"/>'),
+  moon:    SVG('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'),
+};
+function timeIconFor(h) {
+  if (h >= 5 && h < 8)  return TIME_ICONS.sunrise;
+  if (h >= 8 && h < 17) return TIME_ICONS.sun;
+  if (h >= 17 && h < 20) return TIME_ICONS.sunset;
+  return TIME_ICONS.moon;
+}
+
 function tickClock() {
   const d = new Date();
   document.getElementById('localtime').textContent =
     String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  document.getElementById('timeicon').innerHTML = timeIconFor(d.getHours());
 }
 tickClock(); setInterval(tickClock, 30000);
 
