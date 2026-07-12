@@ -104,6 +104,20 @@
   #sound { bottom: 39px; right: 118px; color: var(--bone); cursor: pointer; }
   #sound span { color: var(--dim); }
 
+  /* wordmark logo — only surfaces at the mobile breakpoint (desktop has the intro) */
+  #logo {
+    top: 20px; left: 22px;
+    z-index: 10;
+    display: none;
+    font-family: "Roboto", sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    text-transform: none;
+    letter-spacing: -0.01em;
+    color: var(--bone);
+  }
+  #logo sup { font-size: 0.5em; font-weight: 500; }
+
   #blurb {
     bottom: 96px; left: 28px;
     max-width: 52ch;
@@ -227,9 +241,20 @@
   #zoom button:active { background: var(--bone); color: var(--void); }
 
   @media (max-width: 760px) {
-    #blurb, #hint, #clocks { display: none; }
+    #hint, #clocks { display: none; }
+    #intro { display: none; }            /* intro wordmark replaced by the static logo */
+    #logo { display: block; }
+    #blurb {
+      top: 54px; bottom: auto; left: 22px; right: 22px;
+      max-width: none;
+      font-size: 10px;
+      line-height: 1.5;
+    }
     #nav { top: auto; bottom: 24px; right: 50%; transform: translateX(50%); }
     #nav a { padding: 10px 20px; font-size: 14px; }
+    /* keep the bottom controls from colliding with the centered nav */
+    #sound { top: 22px; right: 22px; bottom: auto; }
+    #zoom { bottom: 86px; right: 20px; }
     .ro-tray { padding: 16px 26px 46px; }
   }
 </style>
@@ -239,11 +264,11 @@
 <div id="viewport"><div id="wall"></div></div>
 <div id="vignette" aria-hidden="true"></div>
 
+<div class="ui" id="logo">Almost&nbsp;Actual<sup>®</sup></div>
 <div class="ui" id="sound">Sound <span>[off]</span></div>
 <div class="ui" id="blurb"><strong>Almost Actual</strong> is a collection of AI-made images: photos, paintings, and things that don't have a name yet. Every piece starts as noise and is shaped, step by step, into something that looks real, feels familiar, and never existed. The gap between actual and almost is where this work lives.</div>
 <div class="ui" id="clocks">
   <div class="row"><span class="place"><span class="ico" id="timeicon"></span>Local time</span><span class="time" id="localtime">--:--</span></div>
-  <div class="row"><span class="place"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>Updated :</span><span class="time" id="lastupdate">--</span></div>
 </div>
 <nav class="ui" id="nav">
   <a href="#" id="navHome" class="active">Home</a>
@@ -671,9 +696,6 @@ requestAnimationFrame(frame);
 
 /* ---------------- clock + sound toggle ---------------- */
 /* ---------------- ledger: number of works + last update ---------------- */
-const LAST_UPDATE = '12 JUL 2026';   /* edit this whenever you add or change work */
-document.getElementById('lastupdate').textContent = LAST_UPDATE;
-
 /* time-of-day icon: sunrise / sun / sunset / moon by the hour */
 const SVG = inner => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 const TIME_ICONS = {
