@@ -143,6 +143,42 @@
   #nav a.active { background: var(--bone); color: var(--void); }
   #nav a:not(.active):hover { background: rgba(255,255,255,0.35); }
 
+  /* rooms dropdown, shares the nav's glass look */
+  #roommenu {
+    top: 62px; right: 28px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 190px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.02) 70%, rgba(255,255,255,0.18));
+    backdrop-filter: blur(3px) saturate(165%);
+    -webkit-backdrop-filter: blur(3px) saturate(165%);
+    border: 1px solid rgba(255,255,255,0.45);
+    box-shadow:
+      inset 1.5px 2.5px 4px -2px rgba(255,255,255,0.95),
+      inset -1.5px -2.5px 4px -2px rgba(255,255,255,0.8),
+      inset 0 0 0 0.5px rgba(255,255,255,0.35),
+      0 10px 26px rgba(40,52,72,0.16),
+      0 2px 6px rgba(40,52,72,0.08);
+    border-radius: 22px;
+    padding: 6px;
+    display: flex;
+  }
+  #roommenu[hidden] { display: none; }
+  #roommenu a {
+    color: var(--bone);
+    text-decoration: none;
+    font-family: "Roboto", sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    padding: 9px 16px;
+    border-radius: 16px;
+    white-space: nowrap;
+  }
+  #roommenu a.active { background: var(--bone); color: var(--void); }
+  #roommenu a:not(.active):hover { background: rgba(255,255,255,0.35); }
+
   #intro {
     position: fixed;
     inset: 0;
@@ -185,6 +221,8 @@
     #blurb, #hint, #clocks { display: none; }
     #nav { top: auto; bottom: 24px; right: 50%; transform: translateX(50%); }
     #nav a { padding: 10px 20px; font-size: 14px; }
+    /* menu sits above the bottom nav, centered, instead of top-right */
+    #roommenu { top: auto; bottom: 84px; right: 50%; transform: translateX(50%); }
   }
 </style>
 </head>
@@ -200,10 +238,11 @@
   <div class="row"><span class="place">◉ Session</span><span class="time" id="elapsed">00:00</span></div>
 </div>
 <nav class="ui" id="nav">
-  <a href="#" class="active">Home</a>
-  <a href="#">Rooms</a>
-  <a href="#">About</a>
+  <a href="#" id="navHome" class="active">Home</a>
+  <a href="#" id="navRooms">Rooms</a>
+  <a href="#" id="navAbout">About</a>
 </nav>
+<div class="ui" id="roommenu" hidden></div>
 <canvas id="intro" aria-hidden="true"></canvas>
 <div class="ui" id="zoom">
   <button id="zoomout" aria-label="Zoom out">−</button>
@@ -248,39 +287,116 @@ const TILES = [
   [1880, 760,  480, 480],   // square
 ];
 
+/* ---------------- rooms ----------------
+   Each room is a category. Add / rename / reorder freely — the menu and the
+   Home ("all works") view rebuild themselves from this one array.
+   Drop pictures into images/<folder>/ and list them in `images`.
+   While `images` is empty a room falls back to tinted gradient placeholders
+   (its `off` shifts the palette so every room looks distinct). */
+const ROOMS = [
+  { id: 'flat', name: 'Flat Illustration', off: 0, images: [
+    'images/Flat_illustration/a_woman.png',
+    'images/Flat_illustration/toucan_perched.png',
+    'images/Flat_illustration/woman_in_a_swim.png',
+    'images/Flat_illustration/womans_face_behind_tropical.png',
+    'images/Flat_illustration/womans_face_behind_tropical02.png',
+  ] },
+  { id: 'mix', name: 'Mix Media', off: 2, images: [
+    'images/Mix_media/mix01.png',
+    'images/Mix_media/mix02.png',
+    'images/Mix_media/mix03.png',
+  ] },
+  { id: 'rebels', name: 'Rebels', off: 4, images: [
+    'images/Rebels/youth01.png',
+    'images/Rebels/youth02.png',
+    'images/Rebels/youth03.png',
+  ] },
+];
+/* Home shows every work from every room, combined. */
+function allRoom() { return { id: 'all', name: 'All Works', off: 0, images: ROOMS.flatMap(r => r.images) }; }
+
 /* ---------------- build wall (2x2 copies of the block for seamless zoom-out) ---------------- */
 const wall = document.getElementById('wall');
 const cells = [];
-for (let by = 0; by < 2; by++) {
-  for (let bx = 0; bx < 2; bx++) {
-    TILES.forEach((t, i) => {
-      const [x, y, w, h] = t;
-      const el = document.createElement('a');
-      el.className = 'cell';
-      el.href = '#';
-      el.style.width = w + 'px';
-      el.style.height = h + 'px';
-      const tag = TAGS[i % TAGS.length];
-      const pills = w >= 340
-        ? `<span class="meta bl"><span class="pill">${tag[0]}</span><span class="pill">${tag[1]}</span></span>`
-        : '';
-      el.innerHTML =
-        `<span class="meta tl">${MODELS[i % MODELS.length]}</span>` +
-        `<span class="meta tr">${TITLES[i % TITLES.length]}</span>` +
-        pills +
-        `<span class="meta br">${2023 + (i % 4)}</span>` +
-        `<div class="frame"><div class="art" style="background:${PALETTES[i % PALETTES.length].join(',')}"></div><div class="dots"></div></div>`;
-      el.addEventListener('click', e => e.preventDefault());
-      wall.appendChild(el);
-      cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h,
-        delay: 150 + Math.random() * 1100,
-        title: TITLES[i % TITLES.length].toUpperCase(),
-        titleEl: el.querySelector('.tr'),
-        wasActual: false, lastText: '' });
-    });
+const WW = BW * 2, WH = BH * 2;
+let activeRoom = null;
+
+function buildWall(room) {
+  activeRoom = room;
+  wall.innerHTML = '';
+  cells.length = 0;
+  const imgs = room.images || [];
+  const base = performance.now();
+  for (let by = 0; by < 2; by++) {
+    for (let bx = 0; bx < 2; bx++) {
+      TILES.forEach((t, i) => {
+        const [x, y, w, h] = t;
+        const el = document.createElement('a');
+        el.className = 'cell';
+        el.href = '#';
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+        const tag = TAGS[i % TAGS.length];
+        const pills = w >= 340
+          ? `<span class="meta bl"><span class="pill">${tag[0]}</span><span class="pill">${tag[1]}</span></span>`
+          : '';
+        const art = imgs.length
+          ? `background-image:url('${imgs[i % imgs.length]}');background-size:cover;background-position:center`
+          : `background:${PALETTES[(i + room.off) % PALETTES.length].join(',')}`;
+        el.innerHTML =
+          `<span class="meta tl">${MODELS[i % MODELS.length]}</span>` +
+          `<span class="meta tr">${TITLES[i % TITLES.length]}</span>` +
+          pills +
+          `<span class="meta br">${2023 + (i % 4)}</span>` +
+          `<div class="frame"><div class="art" style="${art}"></div><div class="dots"></div></div>`;
+        el.addEventListener('click', e => e.preventDefault());
+        wall.appendChild(el);
+        cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h,
+          delay: base + 150 + Math.random() * 1100,
+          title: TITLES[i % TITLES.length].toUpperCase(),
+          titleEl: el.querySelector('.tr'),
+          wasActual: false, lastText: '' });
+      });
+    }
   }
 }
-const WW = BW * 2, WH = BH * 2;
+
+/* ---------------- room navigation ---------------- */
+const navHome  = document.getElementById('navHome');
+const navRooms = document.getElementById('navRooms');
+const navAbout = document.getElementById('navAbout');
+const roommenu = document.getElementById('roommenu');
+
+ROOMS.forEach(r => {
+  const a = document.createElement('a');
+  a.href = '#';
+  a.textContent = r.name;
+  a.dataset.room = r.id;
+  a.addEventListener('click', e => { e.preventDefault(); enterRoom(r); });
+  roommenu.appendChild(a);
+});
+
+function setActiveNav(which) {
+  navHome.classList.toggle('active', which === 'home');
+  navRooms.classList.toggle('active', which === 'rooms');
+}
+function highlightMenu(id) {
+  roommenu.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.room === id));
+}
+const closeMenu = () => { roommenu.hidden = true; };
+
+function enterRoom(room) { buildWall(room); highlightMenu(room.id); setActiveNav('rooms'); closeMenu(); }
+function enterHome()     { buildWall(allRoom()); highlightMenu(null); setActiveNav('home'); closeMenu(); }
+
+navHome.addEventListener('click',  e => { e.preventDefault(); enterHome(); });
+navRooms.addEventListener('click', e => { e.preventDefault(); roommenu.hidden = !roommenu.hidden; });
+navAbout.addEventListener('click', e => { e.preventDefault(); closeMenu(); });
+/* click anywhere outside the menu (and off the Rooms toggle) dismisses it */
+addEventListener('pointerdown', e => {
+  if (!roommenu.hidden && !roommenu.contains(e.target) && e.target !== navRooms) closeMenu();
+}, true);
+
+enterHome();  /* start on the combined wall */
 
 /* ---------------- intro text: dots that demolish on first move ---------------- */
 const intro = document.getElementById('intro');
