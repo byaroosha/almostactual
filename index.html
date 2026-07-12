@@ -1,193 +1,446 @@
-<!--
-  Aroosha Sarrafi — AI Portfolio
-  ------------------------------------------------------------
-  Static site. No build step. Just open index.html (or serve the folder).
-  EDIT YOUR CONTENT: search for the word "EDIT" in this file.
--->
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aroosha Sarrafi — AI Engineer & Researcher</title>
-<meta name="description" content="Selected AI work by Aroosha Sarrafi — building intelligent systems, research, and applied machine learning." />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almost Actual® — A gallery of images that nearly exist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62,600;62,700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0C0D0E;
+    --bone: #E9E7E1;
+    --dim: #8A8B8E;
+    --cell: #101112;
+    --line: #232427;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--void);
+    color: var(--bone);
+    font-family: "Spline Sans Mono", monospace;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body.dragging { cursor: grabbing; }
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css" />
+  /* ================= 3D world ================= */
+  #viewport {
+    position: fixed;
+    inset: 0;
+    perspective: 950px;
+    perspective-origin: 50% 50%;
+  }
+  #wall {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform-style: preserve-3d;
+  }
+  .cell {
+    position: absolute;
+    transform-style: preserve-3d;
+    background: var(--cell);
+    outline: 1px solid var(--line);
+    padding: 40px 20px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    will-change: transform, opacity;
+  }
+  .cell .art { width: 100%; height: 100%; pointer-events: none; }
+  .meta {
+    position: absolute;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+  .meta.tl { top: 13px; left: 15px; color: var(--bone); }
+  .meta.tr { top: 13px; right: 15px; }
+  .meta.br { bottom: 11px; right: 15px; }
+  .meta.bl { bottom: 9px; left: 15px; display: flex; gap: 6px; }
+  .pill {
+    border: 1px solid var(--line);
+    background: #17181B;
+    border-radius: 20px;
+    padding: 3px 9px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+  }
 
-<!-- ============ PRELOADER ============ -->
-<div class="preloader" id="preloader">
-  <div class="preloader__inner">
-    <span class="preloader__label">Loading</span>
-    <span class="preloader__count" id="count">0</span>
-  </div>
-  <div class="preloader__bar"><span id="bar"></span></div>
+  /* ================= floating UI ================= */
+  .ui { position: fixed; z-index: 10; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+  #brand {
+    top: 24px; left: 28px;
+    font-family: "Archivo", sans-serif;
+    font-stretch: 62%;
+    font-weight: 700;
+    font-size: 44px;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    line-height: 0.88;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  #brand .ghost { color: transparent; -webkit-text-stroke: 1.5px var(--bone); }
+  #mark { height: 76px; width: auto; display: block; }
+
+  #sound { top: 28px; left: 50%; transform: translateX(-50%); color: var(--bone); cursor: pointer; }
+  #sound span { color: var(--dim); }
+
+  #blurb {
+    top: 28px; right: 300px;
+    max-width: 34ch;
+    line-height: 1.7;
+    color: var(--bone);
+  }
+  #clocks { top: 28px; right: 28px; line-height: 1.9; }
+  #clocks .row { display: flex; gap: 18px; justify-content: space-between; }
+  #clocks .place { color: var(--bone); }
+  #clocks .time { color: var(--dim); }
+
+  #nav {
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex;
+    background: rgba(233,231,225,0.14);
+    backdrop-filter: blur(14px);
+    border-radius: 40px;
+    padding: 6px;
+  }
+  #nav a {
+    color: var(--bone);
+    text-decoration: none;
+    font-family: "Archivo", sans-serif;
+    font-stretch: 62%;
+    font-weight: 600;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    padding: 12px 28px;
+    border-radius: 30px;
+  }
+  #nav a.active { background: var(--bone); color: var(--void); }
+  #nav a:not(.active):hover { background: rgba(233,231,225,0.12); }
+
+  #intro {
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+  }
+
+  #zoom {
+    bottom: 28px; right: 28px;
+    display: flex;
+    background: rgba(233,231,225,0.14);
+    backdrop-filter: blur(14px);
+    border-radius: 40px;
+    padding: 6px;
+  }
+  #zoom button {
+    background: none;
+    border: none;
+    color: var(--bone);
+    font-family: "Spline Sans Mono", monospace;
+    font-size: 18px;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  #zoom button:hover { background: rgba(233,231,225,0.14); }
+  #zoom button:active { background: var(--bone); color: var(--void); }
+
+  @media (max-width: 760px) {
+    #blurb, #hint, #clocks { display: none; }
+    #nav a { padding: 10px 20px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="viewport"><div id="wall"></div></div>
+
+<div class="ui" id="brand">
+  <img id="mark" src="almostactual.png" alt="Almost Actual mark">
+  <div>Almost<br><span class="ghost">Actual</span></div>
+</div>
+<div class="ui" id="sound">Sound <span>[off]</span></div>
+<div class="ui" id="blurb">Almost Actual is a gallery of machine-made images that nearly exist. Drag to drift through the collection.</div>
+<div class="ui" id="clocks">
+  <div class="row"><span class="place">◐ Latent space</span><span class="time">∞:∞</span></div>
+  <div class="row"><span class="place">● Your reality</span><span class="time" id="localtime">--:--</span></div>
+</div>
+<nav class="ui" id="nav">
+  <a href="#" class="active">Index</a>
+  <a href="#">Rooms</a>
+  <a href="#">About</a>
+</nav>
+<canvas id="intro" aria-hidden="true"></canvas>
+<div class="ui" id="zoom">
+  <button id="zoomout" aria-label="Zoom out">−</button>
+  <button id="zoomin" aria-label="Zoom in">+</button>
 </div>
 
-<!-- ============ CUSTOM CURSOR ============ -->
-<div class="cursor" id="cursor"></div>
-<div class="cursor-dot" id="cursorDot"></div>
+<script>
+/* ---------------- data ---------------- */
+const PALETTES = [
+  ['radial-gradient(ellipse 90% 60% at 30% 85%, #27506B, transparent 60%)','radial-gradient(circle 60px at 72% 22%, #E9DCC3, transparent)','linear-gradient(180deg,#DCE6EA,#7FA6B5)'],
+  ['radial-gradient(circle 45% at 60% 40%, #C4553B, transparent 70%)','radial-gradient(circle 60% at 20% 80%, #2A2320, transparent 70%)','linear-gradient(160deg,#E8DED2,#B8998A)'],
+  ['repeating-linear-gradient(90deg,#1B1C1E 0 2px, transparent 2px 26px)','linear-gradient(180deg,#EDEBE6,#C9C5BC)'],
+  ['radial-gradient(circle 55% at 50% 110%, #274D3D, transparent 75%)','linear-gradient(180deg,#F0EEE6,#A9BCA6)'],
+  ['conic-gradient(from 210deg at 55% 45%, #E4DFD6, #8D8AA8, #3C3A54, #E4DFD6)'],
+  ['radial-gradient(ellipse 120% 55% at 50% 0%, #EFE9DC, transparent 60%)','linear-gradient(180deg,#D9CFBE,#6E5F4B)'],
+  ['radial-gradient(ellipse 70% 90% at 15% 50%, #B3C7D9, transparent 65%)','radial-gradient(ellipse 60% 80% at 85% 55%, #E0C9B0, transparent 60%)','linear-gradient(90deg,#F1F0EC,#D8D4CC)'],
+  ['radial-gradient(circle 40% at 70% 30%, #E3B23C, transparent 70%)','radial-gradient(circle 70% at 25% 75%, #4A2F1F, transparent 75%)','linear-gradient(180deg,#F3E9D4,#B98A4E)'],
+];
+const TITLES = ['Tide study no. 4','Kiln','Interval','Understory','Turn','Sediment','Crossing','Ember field','Shore memory','Vellum','Aperture','North room','Slow signal','Meridian','Overgrowth'];
+const MODELS = ['SDXL','FLUX 1.1','MJ V7','GAN','DALLE 4'];
+const TAGS = [['diffusion','room I'],['diffusion','room II'],['flux','archive'],['gan','archive'],['diffusion','new']];
 
-<!-- ============ NAV ============ -->
-<header class="nav" id="nav">
-  <a href="#top" class="nav__brand" data-magnetic>AS<span class="nav__dot">.</span></a>
-  <nav class="nav__links">
-    <a href="#work" data-magnetic>Work</a>
-    <a href="#about" data-magnetic>About</a>
-    <a href="#contact" data-magnetic>Contact</a>
-  </nav>
-</header>
+/* ---------------- pattern block: mixed proportions ----------------
+   One hand-composed block of 15 tiles (x, y, w, h) that tiles
+   infinitely in both directions. Landscape, portrait, square, small. */
+const BW = 2400, BH = 1600;
+const TILES = [
+  [0,    0,    560, 480],   // landscape
+  [580,  0,    380, 560],   // portrait
+  [980,  0,    440, 440],   // square
+  [1440, 0,    640, 400],   // wide panorama
+  [2100, 0,    280, 340],   // small
+  [0,    500,  420, 560],   // portrait
+  [440,  580,  520, 380],   // landscape
+  [980,  460,  400, 500],   // tall
+  [1400, 420,  460, 460],   // square
+  [1880, 360,  500, 380],   // landscape
+  [0,    1080, 500, 400],   // landscape
+  [520,  980,  360, 460],   // portrait
+  [900,  980,  560, 420],   // landscape
+  [1480, 900,  380, 540],   // tall portrait
+  [1880, 760,  480, 480],   // square
+];
 
-<main id="top">
+/* ---------------- build wall (2x2 copies of the block for seamless zoom-out) ---------------- */
+const wall = document.getElementById('wall');
+const cells = [];
+for (let by = 0; by < 2; by++) {
+  for (let bx = 0; bx < 2; bx++) {
+    TILES.forEach((t, i) => {
+      const [x, y, w, h] = t;
+      const el = document.createElement('a');
+      el.className = 'cell';
+      el.href = '#';
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      const tag = TAGS[i % TAGS.length];
+      const pills = w >= 340
+        ? `<span class="meta bl"><span class="pill">${tag[0]}</span><span class="pill">${tag[1]}</span></span>`
+        : '';
+      el.innerHTML =
+        `<span class="meta tl">${MODELS[i % MODELS.length]}</span>` +
+        `<span class="meta tr">${TITLES[i % TITLES.length]}</span>` +
+        pills +
+        `<span class="meta br">${2023 + (i % 4)}</span>` +
+        `<div class="art" style="background:${PALETTES[i % PALETTES.length].join(',')}"></div>`;
+      el.addEventListener('click', e => e.preventDefault());
+      wall.appendChild(el);
+      cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h });
+    });
+  }
+}
+const WW = BW * 2, WH = BH * 2;
 
-  <!-- ============ HERO ============ -->
-  <section class="hero" id="hero">
-    <canvas class="hero__canvas" id="field"></canvas>
-    <div class="hero__content">
-      <p class="hero__eyebrow reveal">AI Engineer · Researcher · Based in ____ <!-- EDIT location --></p>
-      <h1 class="hero__title">
-        <span class="line"><span>Building</span></span>
-        <span class="line"><span>intelligent</span></span>
-        <span class="line"><span>systems that <em>think.</em></span></span>
-      </h1>
-      <div class="hero__meta reveal">
-        <p>I design and ship machine-learning products — from research prototypes to systems in production.</p>
-        <a href="#work" class="hero__scroll" data-magnetic>
-          <span>Selected work</span>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M7 13l5-5M7 13L2 8" stroke="currentColor" stroke-width="1.5"/></svg>
-        </a>
-      </div>
-    </div>
-    <div class="hero__year reveal">© 2026</div>
-  </section>
+/* ---------------- intro text: dots that demolish on first move ---------------- */
+const intro = document.getElementById('intro');
+const ictx = intro.getContext('2d');
+let particles = [], introState = 'idle'; // idle -> exploding -> done
+const DPR = Math.min(devicePixelRatio || 1, 2);
 
-  <!-- ============ MARQUEE ============ -->
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee__track">
-      <span>Machine Learning</span><span class="marquee__sep">✦</span>
-      <span>LLMs & Agents</span><span class="marquee__sep">✦</span>
-      <span>Computer Vision</span><span class="marquee__sep">✦</span>
-      <span>MLOps</span><span class="marquee__sep">✦</span>
-      <span>Applied Research</span><span class="marquee__sep">✦</span>
-      <span>Machine Learning</span><span class="marquee__sep">✦</span>
-      <span>LLMs & Agents</span><span class="marquee__sep">✦</span>
-      <span>Computer Vision</span><span class="marquee__sep">✦</span>
-      <span>MLOps</span><span class="marquee__sep">✦</span>
-      <span>Applied Research</span><span class="marquee__sep">✦</span>
-    </div>
-  </div>
+function buildIntro() {
+  intro.width = innerWidth * DPR;
+  intro.height = innerHeight * DPR;
+  intro.style.width = innerWidth + 'px';
+  intro.style.height = innerHeight + 'px';
 
-  <!-- ============ WORK ============ -->
-  <section class="work" id="work">
-    <div class="section-head reveal">
-      <span class="section-head__index">01</span>
-      <h2 class="section-head__title">Selected Work</h2>
-    </div>
+  const off = document.createElement('canvas');
+  off.width = innerWidth; off.height = innerHeight;
+  const o = off.getContext('2d');
+  const fs = Math.min(42, innerWidth / 24);
+  o.font = `500 ${fs}px "Spline Sans Mono", monospace`;
+  o.textAlign = 'center';
+  o.textBaseline = 'middle';
+  o.fillStyle = '#fff';
+  o.strokeStyle = '#fff';
+  o.lineWidth = 1.5;                      /* just enough body, keeps counters open */
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const L1 = 'DRAG / SCROLL TO EXPLORE', L2 = 'CLICK A WORK TO ENTER';
+  o.fillText(L1, cx, cy - fs * 0.85);
+  o.strokeText(L1, cx, cy - fs * 0.85);
+  o.fillText(L2, cx, cy + fs * 0.85);
+  o.strokeText(L2, cx, cy + fs * 0.85);
 
-    <!-- EDIT: duplicate a .project block for each project. Change title, tags, year, blurb, and --img. -->
-    <ol class="projects">
-      <li class="project reveal" data-img="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1200&auto=format&fit=crop">
-        <a href="#" class="project__link" data-magnetic>
-          <span class="project__num">01</span>
-          <h3 class="project__title">Neural Search Engine</h3>
-          <div class="project__tags"><span>LLM</span><span>Retrieval</span><span>Python</span></div>
-          <p class="project__desc">Semantic search over 10M+ documents with sub-100ms retrieval, powering a knowledge assistant.</p>
-          <span class="project__year">2025</span>
-          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
-        </a>
-      </li>
+  const data = o.getImageData(0, 0, innerWidth, innerHeight).data;
+  particles = [];
+  const GAP = 3;                          /* fine grid = high resolution letters */
+  for (let y = 0; y < innerHeight; y += GAP) {
+    for (let x = 0; x < innerWidth; x += GAP) {
+      if (data[(y * innerWidth + x) * 4 + 3] > 128) {
+        particles.push({
+          x, y,
+          vx: 0, vy: 0,
+          life: 1,
+          jx: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+  }
+}
 
-      <li class="project reveal" data-img="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop">
-        <a href="#" class="project__link" data-magnetic>
-          <span class="project__num">02</span>
-          <h3 class="project__title">Autonomous Agent Framework</h3>
-          <div class="project__tags"><span>Agents</span><span>Orchestration</span><span>TypeScript</span></div>
-          <p class="project__desc">A multi-agent system that plans, calls tools, and self-corrects on long-horizon tasks.</p>
-          <span class="project__year">2025</span>
-          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
-        </a>
-      </li>
+let veil = 1;
+function drawIntro(t) {
+  ictx.clearRect(0, 0, intro.width, intro.height);
+  ictx.save();
+  ictx.scale(DPR, DPR);
 
-      <li class="project reveal" data-img="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop">
-        <a href="#" class="project__link" data-magnetic>
-          <span class="project__num">03</span>
-          <h3 class="project__title">Vision Quality Inspector</h3>
-          <div class="project__tags"><span>Computer Vision</span><span>Edge ML</span><span>PyTorch</span></div>
-          <p class="project__desc">Real-time defect detection on the factory floor, deployed to edge devices at 60fps.</p>
-          <span class="project__year">2024</span>
-          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
-        </a>
-      </li>
+  /* soft dark veil behind the text so tiles never wash it out */
+  if (introState === 'exploding') veil = Math.max(0, veil - 0.03);
+  if (veil > 0) {
+    const vcx = innerWidth / 2, vcy = innerHeight / 2;
+    const g = ictx.createRadialGradient(vcx, vcy, 0, vcx, vcy, innerWidth * 0.34);
+    g.addColorStop(0, `rgba(12,13,14,${0.82 * veil})`);
+    g.addColorStop(1, 'rgba(12,13,14,0)');
+    ictx.fillStyle = g;
+    ictx.fillRect(0, 0, innerWidth, innerHeight);
+  }
 
-      <li class="project reveal" data-img="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1200&auto=format&fit=crop">
-        <a href="#" class="project__link" data-magnetic>
-          <span class="project__num">04</span>
-          <h3 class="project__title">Forecasting Platform</h3>
-          <div class="project__tags"><span>Time Series</span><span>MLOps</span><span>AWS</span></div>
-          <p class="project__desc">Probabilistic demand forecasting with automated retraining, cutting stockouts by 23%.</p>
-          <span class="project__year">2024</span>
-          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
-        </a>
-      </li>
-    </ol>
-  </section>
+  ictx.fillStyle = '#E4604A';             /* one coral, same as the mark */
+  let alive = false;
+  for (const p of particles) {
+    if (p.life <= 0) continue;
+    alive = true;
+    if (introState === 'idle') {
+      /* steady grid; brightness barely breathes */
+      const flicker = reduced ? 1 : 0.88 + 0.12 * Math.sin(t / 600 + p.jx);
+      ictx.globalAlpha = flicker;
+      ictx.fillRect(p.x, p.y, 1, 1);
+    } else {
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= 0.985; p.vy *= 0.985;
+      p.vy -= 0.05;                       /* puff upward like smoke */
+      p.life -= 0.016 + Math.random() * 0.01;
+      ictx.globalAlpha = Math.max(0, p.life);
+      const s = 1 + (1 - p.life) * 2.5;
+      ictx.fillRect(p.x, p.y, s, s);
+    }
+  }
+  ictx.restore();
+  if (introState === 'exploding' && !alive && veil <= 0) {
+    introState = 'done';
+    intro.remove();
+  }
+}
 
-  <!-- ============ ABOUT ============ -->
-  <section class="about" id="about">
-    <div class="section-head reveal">
-      <span class="section-head__index">02</span>
-      <h2 class="section-head__title">About</h2>
-    </div>
-    <div class="about__grid">
-      <p class="about__lead reveal">
-        <!-- EDIT: your bio -->
-        I'm an AI engineer focused on turning research into <em>reliable, useful products.</em>
-        My work spans large language models, computer vision, and the messy engineering
-        that makes them dependable in the real world.
-      </p>
-      <div class="about__col reveal">
-        <h4>Focus</h4>
-        <ul>
-          <li>LLMs & retrieval systems</li>
-          <li>Agentic workflows</li>
-          <li>Computer vision</li>
-          <li>MLOps & evaluation</li>
-        </ul>
-      </div>
-      <div class="about__col reveal">
-        <h4>Toolkit</h4>
-        <ul>
-          <li>Python · PyTorch</li>
-          <li>TypeScript · React</li>
-          <li>Docker · Kubernetes</li>
-          <li>AWS · GCP</li>
-        </ul>
-      </div>
-    </div>
-  </section>
+function explodeIntro() {
+  if (introState !== 'idle') return;
+  introState = 'exploding';
+  if (reduced) { particles = []; intro.remove(); introState = 'done'; return; }
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  for (const p of particles) {
+    const ang = Math.atan2(p.y - cy, p.x - cx) + (Math.random() - 0.5) * 1.4;
+    const spd = 0.6 + Math.random() * 3.2;
+    p.vx = Math.cos(ang) * spd + (Math.random() - 0.5) * 2;
+    p.vy = Math.sin(ang) * spd + (Math.random() - 0.5) * 2;
+  }
+}
 
-  <!-- ============ CONTACT ============ -->
-  <section class="contact" id="contact">
-    <div class="section-head reveal">
-      <span class="section-head__index">03</span>
-      <h2 class="section-head__title">Contact</h2>
-    </div>
-    <div class="contact__inner">
-      <a href="mailto:byaroosha@gmail.com" class="contact__mail reveal" data-magnetic>byaroosha@gmail.com</a>
-      <div class="contact__socials reveal">
-        <!-- EDIT: your links -->
-        <a href="#" data-magnetic>GitHub</a>
-        <a href="#" data-magnetic>LinkedIn</a>
-        <a href="#" data-magnetic>Google Scholar</a>
-        <a href="#" data-magnetic>X / Twitter</a>
-      </div>
-    </div>
-    <footer class="footer">
-      <span>© 2026 Aroosha Sarrafi</span>
-      <span>Designed & built with care</span>
-      <a href="#top" data-magnetic>Back to top ↑</a>
-    </footer>
-  </section>
+document.fonts.ready.then(buildIntro);
+addEventListener('resize', () => { if (introState === 'idle') buildIntro(); });
+/* ---------------- drag + inertia + zoom + fisheye ---------------- */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let ox = 0, oy = 0, vx = 0, vy = 0, px = 0, py = 0, down = false;
+let zoom = 1, zoomTarget = 1;
+const ZMIN = 0.55, ZMAX = 1.6;
 
-</main>
+function wrap(v, size) { v %= size; return v < -size / 2 ? v + size : (v > size / 2 ? v - size : v); }
 
-<script src="main.js"></script>
+addEventListener('pointerdown', e => { down = true; px = e.clientX; py = e.clientY; vx = vy = 0; document.body.classList.add('dragging'); });
+addEventListener('pointermove', e => {
+  if (!down) return;
+  explodeIntro();
+  const dx = e.clientX - px, dy = e.clientY - py;
+  ox += dx / zoom; oy += dy / zoom; vx = dx / zoom; vy = dy / zoom;
+  px = e.clientX; py = e.clientY;
+});
+addEventListener('pointerup', () => { down = false; document.body.classList.remove('dragging'); });
+addEventListener('wheel', e => {
+  explodeIntro();
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    zoomTarget = Math.min(ZMAX, Math.max(ZMIN, zoomTarget - e.deltaY * 0.002));
+  } else {
+    ox -= e.deltaX / zoom; oy -= e.deltaY / zoom;
+  }
+}, { passive: false });
+
+document.getElementById('zoomin').addEventListener('click', () => {
+  zoomTarget = Math.min(ZMAX, zoomTarget + 0.2);
+});
+document.getElementById('zoomout').addEventListener('click', () => {
+  zoomTarget = Math.max(ZMIN, zoomTarget - 0.2);
+});
+addEventListener('keydown', e => {
+  if (e.key === '+' || e.key === '=') zoomTarget = Math.min(ZMAX, zoomTarget + 0.2);
+  if (e.key === '-' || e.key === '_') zoomTarget = Math.max(ZMIN, zoomTarget - 0.2);
+});
+
+const CURVE = 0.00035;
+const DEPTH = 0.22;
+
+function frame() {
+  if (!down && !reduced) { ox += vx; oy += vy; vx *= 0.94; vy *= 0.94; }
+  zoom += (zoomTarget - zoom) * (reduced ? 1 : 0.1);
+  const vw = innerWidth;
+
+  for (const cell of cells) {
+    const x = wrap(cell.cx - WW / 2 + ox, WW) * zoom;
+    const y = wrap(cell.cy - WH / 2 + oy, WH) * zoom;
+
+    const z = -(x * x + y * y) * CURVE * DEPTH * 2;
+    const ry = -x * CURVE * 60;
+    const rx = y * CURVE * 60;
+
+    cell.el.style.transform =
+      `translate3d(${x - cell.w / 2}px, ${y - cell.h / 2}px, ${z}px) rotateY(${ry}deg) rotateX(${rx}deg) scale(${zoom})`;
+    cell.el.style.opacity = Math.max(0.25, 1 - Math.hypot(x, y) / (vw * 0.85));
+  }
+  if (introState !== 'done') drawIntro(performance.now());
+  requestAnimationFrame(frame);
+}
+frame();
+
+/* ---------------- clock + sound toggle ---------------- */
+function tickClock() {
+  const d = new Date();
+  document.getElementById('localtime').textContent =
+    String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+tickClock(); setInterval(tickClock, 30000);
+
+const sound = document.getElementById('sound');
+let on = false;
+sound.addEventListener('click', () => {
+  on = !on;
+  sound.innerHTML = 'Sound <span>[' + (on ? 'on' : 'off') + ']</span>';
+});
+</script>
+
+</body>
+</html>
