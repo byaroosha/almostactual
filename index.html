@@ -1,0 +1,193 @@
+<!--
+  Aroosha Sarrafi — AI Portfolio
+  ------------------------------------------------------------
+  Static site. No build step. Just open index.html (or serve the folder).
+  EDIT YOUR CONTENT: search for the word "EDIT" through this file.
+-->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aroosha Sarrafi — AI Engineer & Researcher</title>
+<meta name="description" content="Selected AI work by Aroosha Sarrafi — building intelligent systems, research, and applied machine learning." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+
+<!-- ============ PRELOADER ============ -->
+<div class="preloader" id="preloader">
+  <div class="preloader__inner">
+    <span class="preloader__label">Loading</span>
+    <span class="preloader__count" id="count">0</span>
+  </div>
+  <div class="preloader__bar"><span id="bar"></span></div>
+</div>
+
+<!-- ============ CUSTOM CURSOR ============ -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <a href="#top" class="nav__brand" data-magnetic>AS<span class="nav__dot">.</span></a>
+  <nav class="nav__links">
+    <a href="#work" data-magnetic>Work</a>
+    <a href="#about" data-magnetic>About</a>
+    <a href="#contact" data-magnetic>Contact</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero">
+    <canvas class="hero__canvas" id="field"></canvas>
+    <div class="hero__content">
+      <p class="hero__eyebrow reveal">AI Engineer · Researcher · Based in ____ <!-- EDIT location --></p>
+      <h1 class="hero__title">
+        <span class="line"><span>Building</span></span>
+        <span class="line"><span>intelligent</span></span>
+        <span class="line"><span>systems that <em>think.</em></span></span>
+      </h1>
+      <div class="hero__meta reveal">
+        <p>I design and ship machine-learning products — from research prototypes to systems in production.</p>
+        <a href="#work" class="hero__scroll" data-magnetic>
+          <span>Selected work</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M7 13l5-5M7 13L2 8" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="hero__year reveal">© 2026</div>
+  </section>
+
+  <!-- ============ MARQUEE ============ -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee__track">
+      <span>Machine Learning</span><span class="marquee__sep">✦</span>
+      <span>LLMs & Agents</span><span class="marquee__sep">✦</span>
+      <span>Computer Vision</span><span class="marquee__sep">✦</span>
+      <span>MLOps</span><span class="marquee__sep">✦</span>
+      <span>Applied Research</span><span class="marquee__sep">✦</span>
+      <span>Machine Learning</span><span class="marquee__sep">✦</span>
+      <span>LLMs & Agents</span><span class="marquee__sep">✦</span>
+      <span>Computer Vision</span><span class="marquee__sep">✦</span>
+      <span>MLOps</span><span class="marquee__sep">✦</span>
+      <span>Applied Research</span><span class="marquee__sep">✦</span>
+    </div>
+  </div>
+
+  <!-- ============ WORK ============ -->
+  <section class="work" id="work">
+    <div class="section-head reveal">
+      <span class="section-head__index">01</span>
+      <h2 class="section-head__title">Selected Work</h2>
+    </div>
+
+    <!-- EDIT: duplicate a .project block for each project. Change title, tags, year, blurb, and --img. -->
+    <ol class="projects">
+      <li class="project reveal" data-img="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1200&auto=format&fit=crop">
+        <a href="#" class="project__link" data-magnetic>
+          <span class="project__num">01</span>
+          <h3 class="project__title">Neural Search Engine</h3>
+          <div class="project__tags"><span>LLM</span><span>Retrieval</span><span>Python</span></div>
+          <p class="project__desc">Semantic search over 10M+ documents with sub-100ms retrieval, powering a knowledge assistant.</p>
+          <span class="project__year">2025</span>
+          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+      </li>
+
+      <li class="project reveal" data-img="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop">
+        <a href="#" class="project__link" data-magnetic>
+          <span class="project__num">02</span>
+          <h3 class="project__title">Autonomous Agent Framework</h3>
+          <div class="project__tags"><span>Agents</span><span>Orchestration</span><span>TypeScript</span></div>
+          <p class="project__desc">A multi-agent system that plans, calls tools, and self-corrects on long-horizon tasks.</p>
+          <span class="project__year">2025</span>
+          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+      </li>
+
+      <li class="project reveal" data-img="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop">
+        <a href="#" class="project__link" data-magnetic>
+          <span class="project__num">03</span>
+          <h3 class="project__title">Vision Quality Inspector</h3>
+          <div class="project__tags"><span>Computer Vision</span><span>Edge ML</span><span>PyTorch</span></div>
+          <p class="project__desc">Real-time defect detection on the factory floor, deployed to edge devices at 60fps.</p>
+          <span class="project__year">2024</span>
+          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+      </li>
+
+      <li class="project reveal" data-img="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1200&auto=format&fit=crop">
+        <a href="#" class="project__link" data-magnetic>
+          <span class="project__num">04</span>
+          <h3 class="project__title">Forecasting Platform</h3>
+          <div class="project__tags"><span>Time Series</span><span>MLOps</span><span>AWS</span></div>
+          <p class="project__desc">Probabilistic demand forecasting with automated retraining, cutting stockouts by 23%.</p>
+          <span class="project__year">2024</span>
+          <svg class="project__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M15 5H7M15 5v8" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section class="about" id="about">
+    <div class="section-head reveal">
+      <span class="section-head__index">02</span>
+      <h2 class="section-head__title">About</h2>
+    </div>
+    <div class="about__grid">
+      <p class="about__lead reveal">
+        <!-- EDIT: your bio -->
+        I'm an AI engineer focused on turning research into <em>reliable, useful products.</em>
+        My work spans large language models, computer vision, and the messy engineering
+        that makes them dependable in the real world.
+      </p>
+      <div class="about__col reveal">
+        <h4>Focus</h4>
+        <ul>
+          <li>LLMs & retrieval systems</li>
+          <li>Agentic workflows</li>
+          <li>Computer vision</li>
+          <li>MLOps & evaluation</li>
+        </ul>
+      </div>
+      <div class="about__col reveal">
+        <h4>Toolkit</h4>
+        <ul>
+          <li>Python · PyTorch</li>
+          <li>TypeScript · React</li>
+          <li>Docker · Kubernetes</li>
+          <li>AWS · GCP</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONTACT ============ -->
+  <section class="contact" id="contact">
+    <div class="section-head reveal">
+      <span class="section-head__index">03</span>
+      <h2 class="section-head__title">Contact</h2>
+    </div>
+    <div class="contact__inner">
+      <a href="mailto:byaroosha@gmail.com" class="contact__mail reveal" data-magnetic>byaroosha@gmail.com</a>
+      <div class="contact__socials reveal">
+        <!-- EDIT: your links -->
+        <a href="#" data-magnetic>GitHub</a>
+        <a href="#" data-magnetic>LinkedIn</a>
+        <a href="#" data-magnetic>Google Scholar</a>
+        <a href="#" data-magnetic>X / Twitter</a>
+      </div>
+    </div>
+    <footer class="footer">
+      <span>© 2026 Aroosha Sarrafi</span>
+      <span>Designed & built with care</span>
+      <a href="#top" data-magnetic>Back to top ↑</a>
+    </footer>
+  </section>
+
+</main>
+
+<script src="main.js"></script>

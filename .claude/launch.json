@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd /tmp && exec python3 -c 'import http.server, socketserver, functools; d=\"/private/tmp/claude-501/-Users-arooshasarrafi-Library-Mobile-Documents-com-apple-CloudDocs-Claude-projects-AI-portfolio/72fcc7d2-5047-421a-923f-b3bf8bc3f712/scratchpad/preview\"; H=functools.partial(http.server.SimpleHTTPRequestHandler, directory=d); socketserver.TCPServer((\"\", 8000), H).serve_forever()'"
+      ],
+      "port": 8000
+    }
+  ]
+}
