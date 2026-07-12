@@ -104,20 +104,6 @@
   #sound { bottom: 39px; right: 118px; color: var(--bone); cursor: pointer; }
   #sound span { color: var(--dim); }
 
-  /* wordmark logo — only surfaces at the mobile breakpoint (desktop has the intro) */
-  #logo {
-    top: 20px; left: 22px;
-    z-index: 10;
-    display: none;
-    font-family: "Roboto", sans-serif;
-    font-weight: 700;
-    font-size: 18px;
-    text-transform: none;
-    letter-spacing: -0.01em;
-    color: var(--bone);
-  }
-  #logo sup { font-size: 0.5em; font-weight: 500; }
-
   #blurb {
     bottom: 96px; left: 28px;
     max-width: 52ch;
@@ -242,19 +228,20 @@
 
   @media (max-width: 760px) {
     #hint, #clocks { display: none; }
-    #intro { display: none; }            /* intro wordmark replaced by the static logo */
-    #logo { display: block; }
+    /* intro wordmark stays (same pop-out-on-touch treatment as desktop); it and
+       the description sit at the bottom, just above the nav */
     #blurb {
-      top: 54px; bottom: auto; left: 22px; right: 22px;
+      top: auto; bottom: 74px; left: 22px; right: 22px;
+      transform: none;
       max-width: none;
       font-size: 10px;
       line-height: 1.5;
     }
-    #nav { top: auto; bottom: 24px; right: 50%; transform: translateX(50%); }
-    #nav a { padding: 10px 20px; font-size: 14px; }
-    /* keep the bottom controls from colliding with the centered nav */
+    /* nav bottom-left, zoom bottom-right — aligned on the same bottom baseline */
+    #nav { top: auto; bottom: 24px; left: 20px; right: auto; transform: none; }
+    #nav a { padding: 8px 14px; font-size: 13px; }
     #sound { top: 22px; right: 22px; bottom: auto; }
-    #zoom { bottom: 86px; right: 20px; }
+    #zoom { bottom: 24px; right: 20px; }
     .ro-tray { padding: 16px 26px 46px; }
   }
 </style>
@@ -264,7 +251,6 @@
 <div id="viewport"><div id="wall"></div></div>
 <div id="vignette" aria-hidden="true"></div>
 
-<div class="ui" id="logo">Almost&nbsp;Actual<sup>®</sup></div>
 <div class="ui" id="sound">Sound <span>[off]</span></div>
 <div class="ui" id="blurb"><strong>Almost Actual</strong> is a collection of AI-made images: photos, paintings, and things that don't have a name yet. Every piece starts as noise and is shaped, step by step, into something that looks real, feels familiar, and never existed. The gap between actual and almost is where this work lives.</div>
 <div class="ui" id="clocks">
