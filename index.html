@@ -6,14 +6,14 @@
 <title>Almost Actual® — A gallery of images that nearly exist</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62,600;62,700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --void: #0C0D0E;
-    --bone: #E9E7E1;
-    --dim: #8A8B8E;
-    --cell: #101112;
-    --line: #232427;
+    --void: #F0F2F5;
+    --bone: #384456;
+    --dim: #828C9C;
+    --cell: #FFFFFF;
+    --line: #DFE2E7;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -25,6 +25,7 @@
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
+    touch-action: none;
   }
   body.dragging { cursor: grabbing; }
 
@@ -51,7 +52,29 @@
     justify-content: center;
     will-change: transform, opacity;
   }
-  .cell .art { width: 100%; height: 100%; pointer-events: none; }
+  .cell .frame { position: relative; width: 100%; height: 100%; pointer-events: none; transition: transform 0.35s ease; }
+  .cell .art { position: absolute; inset: 0; }
+  .cell .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, transparent 1.05px, var(--void) 1.25px);
+    background-size: 3.5px 3.5px;
+    opacity: var(--dotop, 1);
+    transition: opacity 0.15s linear;
+  }
+  .cell:hover .dots { opacity: 0 !important; transition: opacity 0.35s ease; }
+  .cell:hover { outline-color: #B9BEC7; }
+
+  .cell:hover .meta { color: var(--bone); }
+  .cell:hover .pill { color: var(--bone); border-color: #C6CAD2; }
+  .cell:active .frame { transform: scale(0.97); }
+
+  #vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    background: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 55%, rgba(40,46,58,0.16) 100%);
+  }
   .meta {
     position: absolute;
     font-size: 10px;
@@ -66,7 +89,7 @@
   .meta.bl { bottom: 9px; left: 15px; display: flex; gap: 6px; }
   .pill {
     border: 1px solid var(--line);
-    background: #17181B;
+    background: #F4F5F7;
     border-radius: 20px;
     padding: 3px 9px;
     font-size: 9px;
@@ -76,58 +99,49 @@
 
   /* ================= floating UI ================= */
   .ui { position: fixed; z-index: 10; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
-  #brand {
-    top: 24px; left: 28px;
-    font-family: "Archivo", sans-serif;
-    font-stretch: 62%;
-    font-weight: 700;
-    font-size: 44px;
-    text-transform: uppercase;
-    letter-spacing: 0;
-    line-height: 0.88;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  #brand .ghost { color: transparent; -webkit-text-stroke: 1.5px var(--bone); }
-  #mark { height: 76px; width: auto; display: block; }
-
-  #sound { top: 28px; left: 50%; transform: translateX(-50%); color: var(--bone); cursor: pointer; }
+  #sound { bottom: 39px; right: 118px; color: var(--bone); cursor: pointer; }
   #sound span { color: var(--dim); }
 
   #blurb {
-    top: 28px; right: 300px;
-    max-width: 34ch;
+    bottom: 96px; left: 28px;
+    max-width: 52ch;
     line-height: 1.7;
     color: var(--bone);
   }
-  #clocks { top: 28px; right: 28px; line-height: 1.9; }
+  #clocks { bottom: 34px; left: 28px; line-height: 1.9; }
   #clocks .row { display: flex; gap: 18px; justify-content: space-between; }
   #clocks .place { color: var(--bone); }
   #clocks .time { color: var(--dim); }
 
   #nav {
-    bottom: 28px; left: 50%; transform: translateX(-50%);
+    top: 20px; right: 28px;
     display: flex;
-    background: rgba(233,231,225,0.14);
-    backdrop-filter: blur(14px);
+    background: linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.02) 70%, rgba(255,255,255,0.18));
+    backdrop-filter: blur(3px) saturate(165%);
+    -webkit-backdrop-filter: blur(3px) saturate(165%);
+    border: 1px solid rgba(255,255,255,0.45);
+    box-shadow:
+      inset 1.5px 2.5px 4px -2px rgba(255,255,255,0.95),
+      inset -1.5px -2.5px 4px -2px rgba(255,255,255,0.8),
+      inset 0 0 0 0.5px rgba(255,255,255,0.35),
+      0 10px 26px rgba(40,52,72,0.16),
+      0 2px 6px rgba(40,52,72,0.08);
     border-radius: 40px;
-    padding: 6px;
+    padding: 4px;
   }
   #nav a {
     color: var(--bone);
     text-decoration: none;
-    font-family: "Archivo", sans-serif;
-    font-stretch: 62%;
+    font-family: "Roboto", sans-serif;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 13px;
     text-transform: none;
     letter-spacing: 0.01em;
-    padding: 12px 28px;
+    padding: 8px 18px;
     border-radius: 30px;
   }
   #nav a.active { background: var(--bone); color: var(--void); }
-  #nav a:not(.active):hover { background: rgba(233,231,225,0.12); }
+  #nav a:not(.active):hover { background: rgba(255,255,255,0.35); }
 
   #intro {
     position: fixed;
@@ -139,28 +153,37 @@
   #zoom {
     bottom: 28px; right: 28px;
     display: flex;
-    background: rgba(233,231,225,0.14);
-    backdrop-filter: blur(14px);
+    background: linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.02) 70%, rgba(255,255,255,0.18));
+    backdrop-filter: blur(3px) saturate(165%);
+    -webkit-backdrop-filter: blur(3px) saturate(165%);
+    border: 1px solid rgba(255,255,255,0.45);
+    box-shadow:
+      inset 1.5px 2.5px 4px -2px rgba(255,255,255,0.95),
+      inset -1.5px -2.5px 4px -2px rgba(255,255,255,0.8),
+      inset 0 0 0 0.5px rgba(255,255,255,0.35),
+      0 10px 26px rgba(40,52,72,0.16),
+      0 2px 6px rgba(40,52,72,0.08);
     border-radius: 40px;
-    padding: 6px;
+    padding: 4px;
   }
   #zoom button {
     background: none;
     border: none;
     color: var(--bone);
     font-family: "Spline Sans Mono", monospace;
-    font-size: 18px;
+    font-size: 14px;
     line-height: 1;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     cursor: pointer;
   }
-  #zoom button:hover { background: rgba(233,231,225,0.14); }
+  #zoom button:hover { background: rgba(255,255,255,0.35); }
   #zoom button:active { background: var(--bone); color: var(--void); }
 
   @media (max-width: 760px) {
     #blurb, #hint, #clocks { display: none; }
+    #nav { top: auto; bottom: 24px; right: 50%; transform: translateX(50%); }
     #nav a { padding: 10px 20px; font-size: 14px; }
   }
 </style>
@@ -168,19 +191,16 @@
 <body>
 
 <div id="viewport"><div id="wall"></div></div>
+<div id="vignette" aria-hidden="true"></div>
 
-<div class="ui" id="brand">
-  <img id="mark" src="almostactual.png" alt="Almost Actual mark">
-  <div>Almost<br><span class="ghost">Actual</span></div>
-</div>
 <div class="ui" id="sound">Sound <span>[off]</span></div>
-<div class="ui" id="blurb">Almost Actual is a gallery of machine-made images that nearly exist. Drag to drift through the collection.</div>
+<div class="ui" id="blurb">Almost Actual is a collection of AI-made images: photos, paintings, and things that don't have a name yet. Every piece starts as noise and is shaped, step by step, into something that looks real, feels familiar, and never existed. The gap between actual and almost is where this work lives.</div>
 <div class="ui" id="clocks">
-  <div class="row"><span class="place">◐ Latent space</span><span class="time">∞:∞</span></div>
-  <div class="row"><span class="place">● Your reality</span><span class="time" id="localtime">--:--</span></div>
+  <div class="row"><span class="place">● Local time</span><span class="time" id="localtime">--:--</span></div>
+  <div class="row"><span class="place">◉ Session</span><span class="time" id="elapsed">00:00</span></div>
 </div>
 <nav class="ui" id="nav">
-  <a href="#" class="active">Index</a>
+  <a href="#" class="active">Home</a>
   <a href="#">Rooms</a>
   <a href="#">About</a>
 </nav>
@@ -249,10 +269,14 @@ for (let by = 0; by < 2; by++) {
         `<span class="meta tr">${TITLES[i % TITLES.length]}</span>` +
         pills +
         `<span class="meta br">${2023 + (i % 4)}</span>` +
-        `<div class="art" style="background:${PALETTES[i % PALETTES.length].join(',')}"></div>`;
+        `<div class="frame"><div class="art" style="background:${PALETTES[i % PALETTES.length].join(',')}"></div><div class="dots"></div></div>`;
       el.addEventListener('click', e => e.preventDefault());
       wall.appendChild(el);
-      cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h });
+      cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h,
+        delay: 150 + Math.random() * 1100,
+        title: TITLES[i % TITLES.length].toUpperCase(),
+        titleEl: el.querySelector('.tr'),
+        wasActual: false, lastText: '' });
     });
   }
 }
@@ -261,7 +285,8 @@ const WW = BW * 2, WH = BH * 2;
 /* ---------------- intro text: dots that demolish on first move ---------------- */
 const intro = document.getElementById('intro');
 const ictx = intro.getContext('2d');
-let particles = [], introState = 'idle'; // idle -> exploding -> done
+let particles = [], introState = 'idle', armAt = Infinity; // idle -> exploding -> done
+let iFS = 0, iFSS = 0, iLX = 32, iCY = 0;
 const DPR = Math.min(devicePixelRatio || 1, 2);
 
 function buildIntro() {
@@ -273,23 +298,28 @@ function buildIntro() {
   const off = document.createElement('canvas');
   off.width = innerWidth; off.height = innerHeight;
   const o = off.getContext('2d');
-  const fs = Math.min(42, innerWidth / 24);
-  o.font = `500 ${fs}px "Spline Sans Mono", monospace`;
-  o.textAlign = 'center';
+  const fs = Math.min(64, innerWidth / 14);   /* ACTUAL */
+  const fsS = fs * 0.42;                       /* ALMOST */
+  const blurb = document.getElementById('blurb');
+  const bTop = blurb ? blurb.getBoundingClientRect().top : innerHeight * 0.7;
+  iFS = fs; iFSS = fsS; iLX = 28;
+  iCY = bTop - 20 - fs * 0.57;                 /* ACTUAL's bottom sits 20px above the text */
+  o.textAlign = 'left';
   o.textBaseline = 'middle';
   o.fillStyle = '#fff';
   o.strokeStyle = '#fff';
-  o.lineWidth = 1.5;                      /* just enough body, keeps counters open */
-  const cx = innerWidth / 2, cy = innerHeight / 2;
-  const L1 = 'DRAG / SCROLL TO EXPLORE', L2 = 'CLICK A WORK TO ENTER';
-  o.fillText(L1, cx, cy - fs * 0.85);
-  o.strokeText(L1, cx, cy - fs * 0.85);
-  o.fillText(L2, cx, cy + fs * 0.85);
-  o.strokeText(L2, cx, cy + fs * 0.85);
+  o.lineWidth = 1;
+  const lx = iLX, cy = iCY;
+  o.font = `300 ${fsS}px "Roboto", sans-serif`;
+  o.fillText('ALMOST', lx, cy - fs * 0.52);
+  o.strokeText('ALMOST', lx, cy - fs * 0.52);
+  o.font = `700 ${fs}px "Roboto", sans-serif`;
+  o.fillText('ACTUAL', lx, cy + fs * 0.12);
+  o.strokeText('ACTUAL', lx, cy + fs * 0.12);
 
   const data = o.getImageData(0, 0, innerWidth, innerHeight).data;
   particles = [];
-  const GAP = 3;                          /* fine grid = high resolution letters */
+  const GAP = 2;                          /* dense grid, dots nearly touching */
   for (let y = 0; y < innerHeight; y += GAP) {
     for (let x = 0; x < innerWidth; x += GAP) {
       if (data[(y * innerWidth + x) * 4 + 3] > 128) {
@@ -313,31 +343,39 @@ function drawIntro(t) {
   /* soft dark veil behind the text so tiles never wash it out */
   if (introState === 'exploding') veil = Math.max(0, veil - 0.03);
   if (veil > 0) {
-    const vcx = innerWidth / 2, vcy = innerHeight / 2;
-    const g = ictx.createRadialGradient(vcx, vcy, 0, vcx, vcy, innerWidth * 0.34);
-    g.addColorStop(0, `rgba(12,13,14,${0.82 * veil})`);
-    g.addColorStop(1, 'rgba(12,13,14,0)');
+    const vcx = iLX + iFS * 2, vcy = iCY;
+    const g = ictx.createRadialGradient(vcx, vcy, 0, vcx, vcy, innerWidth * 0.24);
+    g.addColorStop(0, `rgba(240,242,245,${0.85 * veil})`);
+    g.addColorStop(1, 'rgba(240,242,245,0)');
     ictx.fillStyle = g;
     ictx.fillRect(0, 0, innerWidth, innerHeight);
   }
 
-  ictx.fillStyle = '#E4604A';             /* one coral, same as the mark */
+  ictx.fillStyle = '#384456';             /* slate, same as the wordmark */
   let alive = false;
+  if (introState === 'idle') {
+    /* crisp vector text while waiting — particles only exist to explode */
+    alive = particles.length > 0;
+    ictx.globalAlpha = 1;
+    ictx.textAlign = 'left';
+    ictx.textBaseline = 'middle';
+    ictx.font = `300 ${iFSS}px "Roboto", sans-serif`;
+    ictx.fillText('ALMOST', iLX, iCY - iFS * 0.52);
+    ictx.font = `700 ${iFS}px "Roboto", sans-serif`;
+    ictx.fillText('ACTUAL', iLX, iCY + iFS * 0.12);
+    ictx.restore();
+    return;
+  }
   for (const p of particles) {
     if (p.life <= 0) continue;
     alive = true;
-    if (introState === 'idle') {
-      /* steady grid; brightness barely breathes */
-      const flicker = reduced ? 1 : 0.88 + 0.12 * Math.sin(t / 600 + p.jx);
-      ictx.globalAlpha = flicker;
-      ictx.fillRect(p.x, p.y, 1, 1);
-    } else {
+    {
       p.x += p.vx; p.y += p.vy;
       p.vx *= 0.985; p.vy *= 0.985;
       p.vy -= 0.05;                       /* puff upward like smoke */
       p.life -= 0.016 + Math.random() * 0.01;
       ictx.globalAlpha = Math.max(0, p.life);
-      const s = 1 + (1 - p.life) * 2.5;
+      const s = 1.45 + (1 - p.life) * 2.2;
       ictx.fillRect(p.x, p.y, s, s);
     }
   }
@@ -352,7 +390,7 @@ function explodeIntro() {
   if (introState !== 'idle') return;
   introState = 'exploding';
   if (reduced) { particles = []; intro.remove(); introState = 'done'; return; }
-  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const cx = iLX + iFS * 2, cy = iCY;
   for (const p of particles) {
     const ang = Math.atan2(p.y - cy, p.x - cx) + (Math.random() - 0.5) * 1.4;
     const spd = 0.6 + Math.random() * 3.2;
@@ -361,8 +399,11 @@ function explodeIntro() {
   }
 }
 
-document.fonts.ready.then(buildIntro);
+document.fonts.ready.then(() => { buildIntro(); armAt = performance.now() + 600; });
 addEventListener('resize', () => { if (introState === 'idle') buildIntro(); });
+addEventListener('mousemove', () => { if (performance.now() > armAt) explodeIntro(); });
+addEventListener('pointerdown', () => { if (performance.now() > armAt) explodeIntro(); });
+addEventListener('touchstart', () => { if (performance.now() > armAt) explodeIntro(); }, { passive: true });
 /* ---------------- drag + inertia + zoom + fisheye ---------------- */
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let ox = 0, oy = 0, vx = 0, vy = 0, px = 0, py = 0, down = false;
@@ -401,10 +442,26 @@ addEventListener('keydown', e => {
   if (e.key === '-' || e.key === '_') zoomTarget = Math.max(ZMIN, zoomTarget - 0.2);
 });
 
+/* hold A: the whole wall snaps to actual */
+let lightsOn = false;
+addEventListener('keydown', e => { if (e.key === 'a' || e.key === 'A') lightsOn = true; });
+addEventListener('keyup',   e => { if (e.key === 'a' || e.key === 'A') lightsOn = false; });
+
+const GLYPHS = '\u00b7\u2219:\u02d9+\u25aa';
+function scramble(text, amt) {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    out += (c !== ' ' && Math.random() < amt) ? GLYPHS[(Math.random() * GLYPHS.length) | 0] : c;
+  }
+  return out;
+}
+
 const CURVE = 0.00035;
 const DEPTH = 0.22;
+let fc = 0;
 
-function frame() {
+function frame(now = 0) {
   if (!down && !reduced) { ox += vx; oy += vy; vx *= 0.94; vy *= 0.94; }
   zoom += (zoomTarget - zoom) * (reduced ? 1 : 0.1);
   const vw = innerWidth;
@@ -413,20 +470,61 @@ function frame() {
     const x = wrap(cell.cx - WW / 2 + ox, WW) * zoom;
     const y = wrap(cell.cy - WH / 2 + oy, WH) * zoom;
 
+    /* staggered entry: each tile materializes out of the void */
+    let e = 1;
+    if (!reduced) {
+      e = Math.min(1, Math.max(0, (now - cell.delay) / 700));
+      e = e * e * (3 - 2 * e);
+    }
+
     const z = -(x * x + y * y) * CURVE * DEPTH * 2;
     const ry = -x * CURVE * 60;
     const rx = y * CURVE * 60;
 
     cell.el.style.transform =
-      `translate3d(${x - cell.w / 2}px, ${y - cell.h / 2}px, ${z}px) rotateY(${ry}deg) rotateX(${rx}deg) scale(${zoom})`;
-    cell.el.style.opacity = Math.max(0.25, 1 - Math.hypot(x, y) / (vw * 0.85));
+      `translate3d(${x - cell.w / 2}px, ${y - cell.h / 2}px, ${z}px) rotateY(${ry}deg) rotateX(${rx}deg) scale(${zoom * (0.93 + 0.07 * e)})`;
+    const d = Math.hypot(x, y);
+    cell.el.style.opacity = e * Math.max(0.25, 1 - d / (vw * 0.85));
+    /* almost -> actual: works resolve as they approach the centre */
+    let dotop = Math.min(1, Math.max(0, (d / (vw * 0.45) - 0.5) / 0.5));
+    if (lightsOn) dotop = 0;
+    cell.el.style.setProperty('--dotop', dotop.toFixed(3));
+
+    /* resolve chime */
+    if (dotop < 0.05 && !cell.wasActual) { cell.wasActual = true; blip(); }
+    else if (dotop > 0.4) cell.wasActual = false;
+
+    /* title decodes as the work resolves (throttled, only mid-transition) */
+    if ((fc + cell.delay | 0) % 7 === 0) {
+      let txt;
+      if (dotop <= 0.02) txt = cell.title;
+      else if (dotop >= 0.98) txt = scramble(cell.title, 0.85);
+      else txt = scramble(cell.title, dotop * 0.85);
+      if (txt !== cell.lastText) { cell.titleEl.textContent = txt; cell.lastText = txt; }
+    }
   }
+  /* wind follows drag speed */
+  if (on && windGain) {
+    const target = Math.min(0.35, Math.hypot(vx, vy) * zoom * 0.012);
+    windGain.gain.value += (target - windGain.gain.value) * 0.06;
+  }
+  fc++;
   if (introState !== 'done') drawIntro(performance.now());
   requestAnimationFrame(frame);
 }
-frame();
+requestAnimationFrame(frame);
 
 /* ---------------- clock + sound toggle ---------------- */
+/* ---------------- ledger + session timer ---------------- */
+const t0 = Date.now();
+setInterval(() => {
+  const s = Math.floor((Date.now() - t0) / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  document.getElementById('elapsed').textContent =
+    (h ? String(h).padStart(2, '0') + ':' : '') +
+    String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}, 1000);
+
 function tickClock() {
   const d = new Date();
   document.getElementById('localtime').textContent =
@@ -434,11 +532,72 @@ function tickClock() {
 }
 tickClock(); setInterval(tickClock, 30000);
 
+/* ---------------- generative sound: drone + drag wind + resolve chimes ---------------- */
 const sound = document.getElementById('sound');
-let on = false;
+let on = false, actx = null, master = null, windGain = null, lastBlip = 0;
+
+function initAudio() {
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  master = actx.createGain();
+  master.gain.value = 0;
+  master.connect(actx.destination);
+
+  /* low drone — the room tone of latent space */
+  const droneFilter = actx.createBiquadFilter();
+  droneFilter.type = 'lowpass'; droneFilter.frequency.value = 160;
+  const droneGain = actx.createGain(); droneGain.gain.value = 0.16;
+  [55, 55 * 1.498, 110.7].forEach(f => {
+    const o = actx.createOscillator();
+    o.type = 'triangle'; o.frequency.value = f;
+    o.connect(droneFilter); o.start();
+  });
+  droneFilter.connect(droneGain); droneGain.connect(master);
+  const lfo = actx.createOscillator(); lfo.frequency.value = 0.06;
+  const lfoAmt = actx.createGain(); lfoAmt.gain.value = 60;
+  lfo.connect(lfoAmt); lfoAmt.connect(droneFilter.frequency); lfo.start();
+
+  /* wind — swells with drag speed */
+  const len = actx.sampleRate * 2;
+  const buf = actx.createBuffer(1, len, actx.sampleRate);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+  const noise = actx.createBufferSource();
+  noise.buffer = buf; noise.loop = true;
+  const bp = actx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.8;
+  windGain = actx.createGain(); windGain.gain.value = 0;
+  noise.connect(bp); bp.connect(windGain); windGain.connect(master);
+  noise.start();
+}
+
+function blip() {
+  if (!actx || !on) return;
+  const t = actx.currentTime;
+  if (t - lastBlip < 0.09) return;
+  lastBlip = t;
+  const o = actx.createOscillator();
+  o.type = 'sine';
+  o.frequency.value = 520 + Math.random() * 700;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.05, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + 0.4);
+}
+
 sound.addEventListener('click', () => {
   on = !on;
   sound.innerHTML = 'Sound <span>[' + (on ? 'on' : 'off') + ']</span>';
+  if (on) {
+    if (!actx) initAudio();
+    actx.resume();
+    master.gain.cancelScheduledValues(actx.currentTime);
+    master.gain.linearRampToValueAtTime(0.5, actx.currentTime + 1.2);
+  } else if (actx) {
+    master.gain.cancelScheduledValues(actx.currentTime);
+    master.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6);
+  }
 });
 </script>
 
