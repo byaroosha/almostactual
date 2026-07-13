@@ -194,6 +194,67 @@
   .ro-headline a:hover { color: #8A91A0; }
   .ro-headline a.active { color: var(--bone); }
 
+  /* detail view — artwork on the left, a 400px info panel on the right */
+  #detail { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; }
+  #detail[hidden] { display: none; }
+  .dt-scrim {
+    position: absolute; inset: 0;
+    background: rgba(240,242,245,0.90);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    animation: roFade 0.3s ease;
+  }
+  .dt-card {
+    position: relative;
+    display: flex;
+    background: #fff;
+    width: min(92vw, 1040px);
+    height: min(86vh, 700px);            /* FIXED frame — never resizes between pieces */
+    box-shadow: 0 30px 80px rgba(30,40,60,0.22), 0 0 0 1px var(--line);
+    animation: dtPop 0.34s cubic-bezier(0.16,0.84,0.36,1);
+  }
+  @keyframes dtPop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+  .dt-stage { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 30px; }
+  .dt-stage img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; transition: opacity 0.28s ease; }
+  .dt-panel {
+    flex: 0 0 400px; width: 400px;
+    border-left: 1px solid var(--line);
+    padding: 40px 36px 34px;
+    display: flex; flex-direction: column; justify-content: flex-end;   /* info + controls anchored bottom-right */
+    font-family: "Spline Sans Mono", monospace;
+  }
+  .dt-room { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bone); }
+  .dt-sub { margin-top: 9px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); display: flex; gap: 14px; }
+  .dt-desc { margin-top: 22px; font-size: 13px; line-height: 1.75; color: var(--bone); max-height: 42vh; overflow-y: auto; }
+  .dt-desc:empty { display: none; }
+  .dt-controls { margin-top: 26px; display: flex; gap: 10px; }
+  .dt-btn {
+    flex: 1;
+    background: #fff; color: var(--bone);
+    border: 1px solid var(--line); border-radius: 30px;
+    padding: 12px 14px; cursor: pointer;
+    font-family: "Roboto", sans-serif; font-weight: 500; font-size: 13px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .dt-btn:hover { background: var(--bone); color: var(--void); border-color: var(--bone); }
+  .dt-close {
+    position: fixed; z-index: 31;
+    top: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%;
+    background: #fff; color: var(--bone); border: 1px solid var(--line); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Spline Sans Mono", monospace; font-size: 20px; line-height: 1;
+    box-shadow: 0 8px 24px rgba(30,40,60,0.14);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .dt-close:hover { background: var(--bone); color: var(--void); border-color: var(--bone); }
+  @media (max-width: 760px) {
+    .dt-card { flex-direction: column; width: 94vw; height: 88vh; }
+    .dt-stage { flex: 1 1 auto; min-height: 0; padding: 18px 18px 0; }
+    .dt-panel { flex: none; width: auto; border-left: none; border-top: 1px solid var(--line); padding: 20px 22px 22px; justify-content: flex-start; }
+    .dt-desc { margin-top: 14px; max-height: none; }
+    .dt-controls { margin-top: 18px; }
+    .dt-close { top: 16px; right: 16px; width: 40px; height: 40px; }
+  }
+
   #intro {
     position: fixed;
     inset: 0;
@@ -275,6 +336,23 @@
     <h2 class="ro-headline" id="roHeadline"></h2>
   </div>
 </div>
+
+<div id="detail" hidden>
+  <div class="dt-scrim" id="dtScrim"></div>
+  <button class="dt-close" id="dtClose" aria-label="Close">✕</button>
+  <div class="dt-card">
+    <div class="dt-stage"><img id="dtImg" alt=""></div>
+    <aside class="dt-panel">
+      <div class="dt-room" id="dtRoom"></div>
+      <div class="dt-sub"><span id="dtMedium"></span><span id="dtYear"></span></div>
+      <p class="dt-desc" id="dtDesc"></p>
+      <div class="dt-controls">
+        <button class="dt-btn" id="dtPrev">← Prev</button>
+        <button class="dt-btn" id="dtNext">Next →</button>
+      </div>
+    </aside>
+  </div>
+</div>
 <canvas id="intro" aria-hidden="true"></canvas>
 <div class="ui" id="zoom">
   <button id="zoomout" aria-label="Zoom out">−</button>
@@ -332,7 +410,8 @@ const ROOMS = [
     { src: 'images/Flat_illustration/a_woman.png',                       medium: 'Illustration', year: 2024 },
     { src: 'images/Flat_illustration/toucan_perched.png',                medium: 'Illustration', year: 2024 },
     { src: 'images/Flat_illustration/woman_in_a_swim.png',               medium: 'Illustration', year: 2024 },
-    { src: 'images/Flat_illustration/womans_face_behind_tropical.png',   medium: 'Illustration', year: 2024 },
+    { src: 'images/Flat_illustration/womans_face_behind_tropical.png',   medium: 'Illustration', year: 2024,
+      desc: 'A portrait half-hidden behind monstera and palm — figure and foliage pressed into one flat, sunlit plane. (Placeholder text — edit or remove.)' },
     { src: 'images/Flat_illustration/womans_face_behind_tropical02.png', medium: 'Illustration', year: 2024 },
   ] },
   { id: 'mix', name: 'Mix Media', off: 2, images: [
@@ -341,7 +420,8 @@ const ROOMS = [
     { src: 'images/Mix_media/mix03.png', medium: 'Mixed Media', year: 2024 },
   ] },
   { id: 'rebels', name: 'Rebels', off: 4, images: [
-    { src: 'images/Rebels/youth01.png', medium: 'Photography', year: 2024 },
+    { src: 'images/Rebels/youth01.png', medium: 'Photography', year: 2024,
+      desc: 'Staged like a period photograph that never happened — a styled portrait from an era assembled entirely out of noise. (Placeholder text — edit or remove.)' },
     { src: 'images/Rebels/youth02.png', medium: 'Photography', year: 2024 },
     { src: 'images/Rebels/youth03.png', medium: 'Photography', year: 2024 },
   ] },
@@ -354,6 +434,7 @@ function allRoom() { return { id: 'all', name: 'All Works', off: 0, images: ROOM
 /* ---------------- build wall (2x2 copies of the block for seamless zoom-out) ---------------- */
 const wall = document.getElementById('wall');
 const cells = [];
+let currentImages = [];       /* the images the wall currently shows (drives the detail view) */
 const WW = BW * 2, WH = BH * 2;
 let activeRoom = null;
 
@@ -362,6 +443,7 @@ function buildWall(room) {
   wall.innerHTML = '';
   cells.length = 0;
   const imgs = room.images || [];
+  currentImages = imgs;
   const base = performance.now();
   for (let by = 0; by < 2; by++) {
     for (let bx = 0; bx < 2; bx++) {
@@ -385,7 +467,8 @@ function buildWall(room) {
           `<span class="meta tr">${medium}</span>` +
           `<span class="meta br">${year}</span>` +
           `<div class="frame"><div class="art" style="${art}"></div><div class="dots"></div></div>`;
-        el.addEventListener('click', e => e.preventDefault());
+        const imgIndex = imgs.length ? i % imgs.length : -1;
+        el.addEventListener('click', e => { e.preventDefault(); if (dragDist < 8 && imgIndex >= 0) openDetail(imgIndex); });
         wall.appendChild(el);
         cells.push({ el, cx: bx * BW + x + w / 2, cy: by * BH + y + h / 2, w, h,
           delay: base + 150 + Math.random() * 1100,
@@ -453,6 +536,42 @@ document.getElementById('roScrim').addEventListener('click', closeTray);
 addEventListener('keydown', e => { if (e.key === 'Escape') closeTray(); });
 
 selectType('all');  /* start showing everything */
+
+/* ---------------- detail view (enlarged piece, prev/next over the current filter) ---------------- */
+const detail = document.getElementById('detail');
+const dtImg = document.getElementById('dtImg');
+const dtPrev = document.getElementById('dtPrev'), dtNext = document.getElementById('dtNext');
+let detailIndex = 0;
+
+function renderDetail() {
+  const list = currentImages;
+  if (!list.length) return;
+  detailIndex = (detailIndex % list.length + list.length) % list.length;   /* wrap */
+  const im = list[detailIndex];
+  dtImg.style.opacity = '0';                        /* fade the swap so the fixed frame never jumps */
+  dtImg.onload = () => { dtImg.style.opacity = '1'; };
+  dtImg.src = im.src;
+  if (dtImg.complete) dtImg.style.opacity = '1';
+  dtImg.alt = [im.medium, im.room].filter(Boolean).join(' — ');
+  document.getElementById('dtRoom').textContent = im.room || '';
+  document.getElementById('dtMedium').textContent = im.medium || '';
+  document.getElementById('dtYear').textContent = im.year || '';
+  document.getElementById('dtDesc').textContent = im.desc || '';   /* hidden when empty */
+}
+function openDetail(i) { detailIndex = i; renderDetail(); detail.hidden = false; }
+function closeDetail() { detail.hidden = true; dtImg.removeAttribute('src'); }
+function stepDetail(d) { detailIndex += d; renderDetail(); }
+
+document.getElementById('dtClose').addEventListener('click', closeDetail);
+document.getElementById('dtScrim').addEventListener('click', closeDetail);
+dtPrev.addEventListener('click', () => stepDetail(-1));
+dtNext.addEventListener('click', () => stepDetail(1));
+addEventListener('keydown', e => {
+  if (detail.hidden) return;
+  if (e.key === 'Escape') closeDetail();
+  else if (e.key === 'ArrowLeft') stepDetail(-1);
+  else if (e.key === 'ArrowRight') stepDetail(1);
+});
 
 /* ---------------- intro text: dots that demolish on first move ---------------- */
 const intro = document.getElementById('intro');
@@ -578,18 +697,19 @@ addEventListener('pointerdown', () => { if (performance.now() > armAt) explodeIn
 addEventListener('touchstart', () => { if (performance.now() > armAt) explodeIntro(); }, { passive: true });
 /* ---------------- drag + inertia + zoom + fisheye ---------------- */
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let ox = 0, oy = 0, vx = 0, vy = 0, px = 0, py = 0, down = false;
+let ox = 0, oy = 0, vx = 0, vy = 0, px = 0, py = 0, down = false, dragDist = 0;
 let zoom = 1, zoomTarget = 1;
 const ZMIN = 0.55, ZMAX = 1.6;
 
 function wrap(v, size) { v %= size; return v < -size / 2 ? v + size : (v > size / 2 ? v - size : v); }
 
-addEventListener('pointerdown', e => { down = true; px = e.clientX; py = e.clientY; vx = vy = 0; document.body.classList.add('dragging'); });
+addEventListener('pointerdown', e => { down = true; px = e.clientX; py = e.clientY; vx = vy = 0; dragDist = 0; document.body.classList.add('dragging'); });
 addEventListener('pointermove', e => {
   if (!down) return;
   explodeIntro();
   const dx = e.clientX - px, dy = e.clientY - py;
   ox += dx / zoom; oy += dy / zoom; vx = dx / zoom; vy = dy / zoom;
+  dragDist += Math.abs(dx) + Math.abs(dy);
   px = e.clientX; py = e.clientY;
 });
 addEventListener('pointerup', () => { down = false; document.body.classList.remove('dragging'); });
