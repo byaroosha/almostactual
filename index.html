@@ -594,10 +594,12 @@ function buildIntro() {
   const off = document.createElement('canvas');
   off.width = innerWidth; off.height = innerHeight;
   const o = off.getContext('2d');
-  const fs = Math.min(64, innerWidth / 14);   /* ACTUAL */
-  const fsS = fs * 0.42;                       /* ALMOST */
   const blurb = document.getElementById('blurb');
   const bTop = blurb ? blurb.getBoundingClientRect().top : innerHeight * 0.7;
+  /* ACTUAL: 128px on desktop, a seventh of the width on phones; the wordmark is
+     1.3x its size tall, so the last term keeps it on screen in short windows */
+  const fs = Math.min(128, innerWidth / 7, (bTop - 36) / 1.3);
+  const fsS = fs * 0.42;                       /* ALMOST */
   iFS = fs; iFSS = fsS; iLX = 28;
   iCY = bTop - 20 - fs * 0.57;                 /* ACTUAL's bottom sits 20px above the text */
   o.textAlign = 'left';
@@ -640,7 +642,7 @@ function drawIntro(t) {
   if (introState === 'exploding') veil = Math.max(0, veil - 0.03);
   if (veil > 0) {
     const vcx = iLX + iFS * 2, vcy = iCY;
-    const g = ictx.createRadialGradient(vcx, vcy, 0, vcx, vcy, innerWidth * 0.24);
+    const g = ictx.createRadialGradient(vcx, vcy, 0, vcx, vcy, Math.max(innerWidth * 0.24, iFS * 4));
     g.addColorStop(0, `rgba(240,242,245,${0.85 * veil})`);
     g.addColorStop(1, 'rgba(240,242,245,0)');
     ictx.fillStyle = g;
