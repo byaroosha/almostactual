@@ -26,6 +26,7 @@
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-touch-callout: none;   /* iOS: no link preview when a press on a tile is held */
     touch-action: none;
   }
   body.dragging { cursor: grabbing; }
@@ -707,16 +708,25 @@ const ZMIN = 0.55, ZMAX = 1.6;
 
 function wrap(v, size) { v %= size; return v < -size / 2 ? v + size : (v > size / 2 ? v - size : v); }
 
-addEventListener('pointerdown', e => { down = true; px = e.clientX; py = e.clientY; vx = vy = 0; dragDist = 0; document.body.classList.add('dragging'); });
+function endDrag() { down = false; document.body.classList.remove('dragging'); }
+/* tiles are links: stop the browser's own link drag, which would cancel the pointer and steal the wall drag */
+addEventListener('dragstart', e => e.preventDefault());
+addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;   /* left button only */
+  down = true; px = e.clientX; py = e.clientY; vx = vy = 0; dragDist = 0; document.body.classList.add('dragging');
+});
 addEventListener('pointermove', e => {
   if (!down) return;
+  if (e.pointerType === 'mouse' && e.buttons === 0) { endDrag(); return; }   /* the release was missed */
   explodeIntro();
   const dx = e.clientX - px, dy = e.clientY - py;
   ox += dx / zoom; oy += dy / zoom; vx = dx / zoom; vy = dy / zoom;
   dragDist += Math.abs(dx) + Math.abs(dy);
   px = e.clientX; py = e.clientY;
 });
-addEventListener('pointerup', () => { down = false; document.body.classList.remove('dragging'); });
+addEventListener('pointerup', endDrag);
+addEventListener('pointercancel', endDrag);
+addEventListener('blur', endDrag);
 addEventListener('wheel', e => {
   explodeIntro();
   if (e.ctrlKey || e.metaKey) {
